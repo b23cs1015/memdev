@@ -1,21 +1,23 @@
 import cors from "cors";
 import express from "express";
+import { env } from "./config/env.js";
+import { errorHandler } from "./middleware/error.middleware.js";
+import { notFoundHandler } from "./middleware/not-found.middleware.js";
+import apiRouter from "./routes/index.js";
 
 const app = express();
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL ?? "http://localhost:5173",
+    origin: env.FRONTEND_URL,
   }),
 );
 
 app.use(express.json());
 
-app.get("/api/health", (_req, res) => {
-  res.status(200).json({
-    status: "ok",
-    service: "memdev-backend",
-  });
-});
+app.use("/api", apiRouter);
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 export default app;

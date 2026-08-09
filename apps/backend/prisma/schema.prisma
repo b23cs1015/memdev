@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  notes        Note[]
+  collections  Collection[]
+  tags         Tag[]
+}
+
+model Note {
+  id           String       @id @default(cuid())
+  userId       String
+  collectionId String?
+
+  title        String
+  content      String       @db.Text
+  sourceUrl    String?
+  summary      String?      @db.Text
+
+  isFavorite   Boolean      @default(false)
+  isArchived   Boolean      @default(false)
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collection   Collection?  @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  noteTags     NoteTag[]
+
+  @@index([userId])
+  @@index([collectionId])
+  @@index([createdAt])
+}
+
+model Collection {
+  id        String   @id @default(cuid())
+  userId    String
+
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes     Note[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  userId    String
+
+  name      String
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  noteTags  NoteTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model NoteTag {
+  noteId String
+  tagId  String
+
+  note   Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([noteId, tagId])
+  @@index([tagId])
+}

@@ -5,6 +5,10 @@ import { z } from "zod";
 
 import { env } from "../config/env.js";
 import { prisma } from "../config/prisma.js";
+import {
+  requireAuth,
+  type AuthenticatedRequest,
+} from "../middleware/auth.middleware.js";
 
 const router = Router();
 
@@ -132,5 +136,39 @@ router.post("/login", async (req, res, next) => {
     next(error);
   }
 });
+
+router.get(
+  "/me",
+  requireAuth,
+  async (req, res, next) => {
+    try {
+      const authenticatedRequest = req as AuthenticatedRequest;
+
+      const user = await prisma.user.findUnique({
+        where: {
+          id: authenticatedRequest.user.id,
+        },
+        select: {
+          id: true,
+          email: true,
+          createdAt: true,
+        },
+      });
+
+      if (!user) {
+        res.status(401).json({
+          message: "User account no longer exists",
+        });
+        return;
+      }
+
+      res.status(200).json({
+        user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 export default router;

@@ -21,12 +21,172 @@ vi.mock("../src/config/prisma.js", () => ({
   prisma: mockPrisma,
 }));
 
+const mockGenerateNoteSummary = vi.hoisted(
+  () => vi.fn(),
+);
+
+vi.mock("../src/services/ai.service.js", () => ({
+  generateNoteSummary: mockGenerateNoteSummary,
+}));
+
 import app from "../src/app.js";
 
 describe("Notes API", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
+
+  describe("POST /api/notes/:id/summarize", () => {
+    it("rejects requests without authentication", async () => {
+        const response = await request(app).post(
+        "/api/notes/note-1/summarize",
+        );
+
+        expect(response.status).toBe(401);
+
+        expect(response.body).toEqual({
+        message: "Authentication required",
+        });
+
+        expect(
+        mockGenerateNoteSummary,
+        ).not.toHaveBeenCalled();
+    });
+
+    it("returns 404 when the note does not belong to the authenticated user", async () => {
+        mockPrisma.note.findFirst.mockResolvedValue(null);
+
+        const response = await request(app)
+        .post("/api/notes/note-1/summarize")
+        .set(
+            "Authorization",
+            `Bearer ${createTestToken("user-1")}`,
+        );
+
+        expect(response.status).toBe(404);
+
+        expect(response.body).toEqual({
+        message: "Note not found",
+        });
+
+        expect(
+        mockGenerateNoteSummary,
+        ).not.toHaveBeenCalled();
+
+        expect(mockPrisma.note.update).not.toHaveBeenCalled();
+    });
+
+    it("generates and stores a note summary", async () => {
+        const note = createMockNote(
+        "note-1",
+        "user-1",
+        );
+
+        const summary =
+        "Rate limiting controls request frequency.";
+
+        const updatedNote = {
+        ...note,
+        summary,
+        };
+
+        mockPrisma.note.findFirst.mockResolvedValue(note);
+
+        mockGenerateNoteSummary.mockResolvedValue(
+        summary,
+        );
+
+        mockPrisma.note.update.mockResolvedValue(
+        updatedNote,
+        );
+
+        const response = await request(app)
+        .post("/api/notes/note-1/summarize")
+        .set(
+            "Authorization",
+            `Bearer ${createTestToken("user-1")}`,
+        );
+
+        expect(response.status).toBe(200);
+
+        expect(response.body.note).toMatchObject({
+        id: "note-1",
+        userId: "user-1",
+        summary,
+        });
+
+        expect(
+        mockGenerateNoteSummary,
+        ).toHaveBeenCalledWith(
+        note.title,
+        note.content,
+        );
+
+        expect(mockPrisma.note.update).toHaveBeenCalledWith({
+        where: {
+            id: "note-1",
+        },
+        data: {
+            summary,
+        },
+        });
+    });
+
+    it("returns 503 when AI summarization is unavailable", async () => {
+        const note = createMockNote(
+        "note-1",
+        "user-1",
+        );
+
+        mockPrisma.note.findFirst.mockResolvedValue(note);
+
+        mockGenerateNoteSummary.mockResolvedValue(null);
+
+        const response = await request(app)
+        .post("/api/notes/note-1/summarize")
+        .set(
+            "Authorization",
+            `Bearer ${createTestToken("user-1")}`,
+        );
+
+        expect(response.status).toBe(503);
+
+        expect(response.body).toEqual({
+        message:
+            "AI summarization is currently unavailable",
+        });
+
+        expect(mockPrisma.note.update).not.toHaveBeenCalled();
+    });
+
+    it("returns 503 when the AI provider fails", async () => {
+        const note = createMockNote(
+        "note-1",
+        "user-1",
+        );
+
+        mockPrisma.note.findFirst.mockResolvedValue(note);
+
+        mockGenerateNoteSummary.mockRejectedValue(
+        new Error("AI provider unavailable"),
+        );
+
+        const response = await request(app)
+        .post("/api/notes/note-1/summarize")
+        .set(
+            "Authorization",
+            `Bearer ${createTestToken("user-1")}`,
+        );
+
+        expect(response.status).toBe(503);
+
+        expect(response.body).toEqual({
+        message: "AI summarization failed",
+        });
+
+        expect(mockPrisma.note.update).not.toHaveBeenCalled();
+    });
+    });
 
   describe("POST /api/notes", () => {
     it("rejects requests without authentication", async () => {

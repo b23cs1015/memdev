@@ -240,6 +240,13 @@ describe("Notes API", () => {
         orderBy: {
           createdAt: "desc",
         },
+        include: {
+          noteTags: {
+            include: {
+              tag: true,
+            },
+          },
+        },
       });
     });
 
@@ -260,6 +267,7 @@ describe("Notes API", () => {
           isArchived: false,
           createdAt: newestDate,
           updatedAt: newestDate,
+          noteTags: [],
         },
         {
           id: "note-old",
@@ -273,6 +281,7 @@ describe("Notes API", () => {
           isArchived: false,
           createdAt: olderDate,
           updatedAt: olderDate,
+          noteTags: [],
         },
       ]);
 
@@ -291,12 +300,14 @@ describe("Notes API", () => {
         id: "note-new",
         userId: "user-1",
         title: "Newest Note",
+        noteTags: [],
       });
 
       expect(response.body.notes[1]).toMatchObject({
         id: "note-old",
         userId: "user-1",
         title: "Older Note",
+        noteTags: [],
       });
 
       expect(mockPrisma.note.findMany).toHaveBeenCalledWith({
@@ -305,6 +316,13 @@ describe("Notes API", () => {
         },
         orderBy: {
           createdAt: "desc",
+        },
+        include: {
+          noteTags: {
+            include: {
+              tag: true,
+            },
+          },
         },
       });
     });

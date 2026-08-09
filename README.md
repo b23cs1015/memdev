@@ -4,11 +4,11 @@ MemDev is a personal knowledge management application designed to help users cap
 
 The project consists of:
 
-* A React web application
-* A Node.js/Express backend API
-* A PostgreSQL database accessed through Prisma ORM
-* A planned Chrome browser extension for web clipping
-* Planned OpenAI-powered summarization and AI-assisted organization
+- A React web application
+- A Node.js/Express backend API
+- A PostgreSQL database accessed through Prisma ORM
+- A planned Chrome browser extension for web clipping
+- Planned OpenAI-powered summarization and AI-assisted organization
 
 The project is being developed incrementally as a **resume/placement project**, with a focus on demonstrating practical full-stack development, backend architecture, database design, authentication, API development, browser extension integration, and AI integration.
 
@@ -20,58 +20,67 @@ The **SRS document is the source of truth for the intended product functionality
 
 ## Frontend
 
-* React 19
-* TypeScript
-* Vite
-* Tailwind CSS
-* React Router
-* TanStack Query
-* Lucide React
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+- React Router
+- TanStack Query
+- Lucide React
 
 ## Backend
 
-* Node.js
-* Express
-* TypeScript
-* Zod
-* REST API
-* ESLint
-* dotenv
+- Node.js
+- Express
+- TypeScript
+- Zod
+- REST API
+- ESLint
+- dotenv
+- bcryptjs
+- jsonwebtoken
+- googleapis
 
 ## Database
 
-* PostgreSQL 18
-* Prisma ORM 7.9.1
-* Prisma Client
-* `@prisma/adapter-pg`
-* `pg`
+- PostgreSQL 18
+- Prisma ORM 7.9.1
+- Prisma Client
+- `@prisma/adapter-pg`
+- `pg`
+
+## Testing
+
+- Vitest
+- Supertest
+- `@types/supertest`
 
 ## Browser Extension
 
 Planned:
 
-* Chrome Manifest V3
-* TypeScript
+- Chrome Manifest V3
+- TypeScript
 
 ## AI
 
 Planned:
 
-* OpenAI API
-* AI-powered summarization
-* AI-generated tags
+- OpenAI API
+- AI-powered summarization
+- AI-generated tags
 
 ## Package Management
 
-* pnpm
-* pnpm workspaces
+- pnpm
+- pnpm workspaces
 
 ## Development Environment
 
-* VS Code
-* Git
-* GitHub
-* Windows
+- VS Code
+- Git
+- GitHub
+- Windows
 
 ---
 
@@ -101,17 +110,25 @@ memdev/
 │   │   ├── src/
 │   │   │   ├── config/
 │   │   │   │   ├── env.ts
+│   │   │   │   ├── google.ts
 │   │   │   │   └── prisma.ts
 │   │   │   ├── middleware/
+│   │   │   │   ├── auth.middleware.ts
+│   │   │   │   ├── error.middleware.ts
+│   │   │   │   └── not-found.middleware.ts
 │   │   │   ├── routes/
 │   │   │   │   ├── index.ts
+│   │   │   │   ├── auth.routes.ts
 │   │   │   │   └── notes.routes.ts
 │   │   │   ├── generated/
 │   │   │   │   └── prisma/
 │   │   │   ├── app.ts
 │   │   │   └── server.ts
 │   │   │
+│   │   ├── tests/
+│   │   │   └── auth.routes.test.ts
 │   │   ├── prisma.config.ts
+│   │   ├── vitest.config.ts
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   │
@@ -138,6 +155,19 @@ memdev/
 
 The project is being developed incrementally using a pnpm monorepo.
 
+## Current Implementation Status
+
+```text
+Phase 1  — Project / Monorepo Setup        ✓
+Phase 2  — Frontend Foundation             ✓
+Phase 3  — Backend Foundation              ✓
+Phase 4  — Backend Architecture            ✓
+Phase 5  — PostgreSQL + Prisma             ✓
+Phase 5I — Prisma Backend Integration      ✓
+Phase 8  — Authentication                  ✓
+Phase 9  — Notes CRUD API                  → Next
+```
+
 Every meaningful milestone is:
 
 1. Implemented
@@ -154,20 +184,20 @@ This provides a clear development history and makes the project easy to continue
 
 ## Completed
 
-* Initialized the MemDev Git repository
-* Configured pnpm workspaces
-* Created the `apps/` structure
-* Created the `packages/` structure
-* Added `packages/shared`
-* Added `packages/config`
-* Added root `package.json`
-* Added `pnpm-workspace.yaml`
-* Added `pnpm-lock.yaml`
-* Added `.env.example`
-* Added repository-wide `.gitignore`
-* Configured Git/GitHub workflow
-* Removed `node_modules` from Git tracking
-* Added initial README/project documentation
+- Initialized the MemDev Git repository
+- Configured pnpm workspaces
+- Created the `apps/` structure
+- Created the `packages/` structure
+- Added `packages/shared`
+- Added `packages/config`
+- Added root `package.json`
+- Added `pnpm-workspace.yaml`
+- Added `pnpm-lock.yaml`
+- Added `.env.example`
+- Added repository-wide `.gitignore`
+- Configured Git/GitHub workflow
+- Removed `node_modules` from Git tracking
+- Added initial README/project documentation
 
 ## Git milestones
 
@@ -225,15 +255,15 @@ A basic MemDev landing screen was created to verify the frontend and styling pip
 
 The following libraries have been installed:
 
-* React Router
-* TanStack Query
-* Lucide React
+- React Router
+- TanStack Query
+- Lucide React
 
 They provide the foundation for:
 
-* Client-side routing
-* Server-state/API management
-* UI icons
+- Client-side routing
+- Server-state/API management
+- UI icons
 
 ## Frontend Routing
 
@@ -270,7 +300,7 @@ React Router
 
 ## Frontend Validation
 
-The following commands currently pass:
+The following commands pass:
 
 ```bash
 pnpm --filter web build
@@ -293,13 +323,13 @@ feat: add frontend routing foundation
 
 The backend was created using:
 
-* Node.js
-* Express
-* TypeScript
-* Zod
-* CORS
-* dotenv
-* ESLint
+- Node.js
+- Express
+- TypeScript
+- Zod
+- CORS
+- dotenv
+- ESLint
 
 Location:
 
@@ -338,6 +368,12 @@ Current API structure:
 ```text
 /api
 ├── /health
+├── /auth
+│   ├── /register
+│   ├── /login
+│   ├── /me
+│   ├── /google
+│   └── /google/callback
 └── /notes
 ```
 
@@ -391,12 +427,16 @@ Unexpected server errors are handled through the centralized error middleware.
 
 Backend environment configuration is validated using Zod.
 
-Current local configuration:
+Current local configuration includes:
 
 ```env
 PORT=5000
 FRONTEND_URL=http://localhost:5173
 DATABASE_URL=...
+JWT_SECRET=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_CALLBACK_URL=...
 ```
 
 The actual `.env` file is ignored by Git and must never be committed.
@@ -516,7 +556,7 @@ The project uses the Prisma 7 configuration style where the database URL is conf
 
 ## Database Schema
 
-The initial database entities are:
+The current database entities are:
 
 ```text
 User
@@ -547,7 +587,7 @@ NoteTag
  └── Note + Tag
 ```
 
-### User
+## User
 
 Stores application users.
 
@@ -557,11 +597,16 @@ Important fields:
 id
 email
 passwordHash
+googleId
 createdAt
 updatedAt
 ```
 
-### Note
+`passwordHash` is nullable for users created exclusively through Google OAuth.
+
+`googleId` is unique and nullable.
+
+## Note
 
 Stores knowledge-base notes.
 
@@ -581,7 +626,7 @@ createdAt
 updatedAt
 ```
 
-### Collection
+## Collection
 
 Groups notes.
 
@@ -595,7 +640,7 @@ createdAt
 updatedAt
 ```
 
-### Tag
+## Tag
 
 Stores user-specific tags.
 
@@ -608,7 +653,7 @@ name
 createdAt
 ```
 
-### NoteTag
+## NoteTag
 
 Join table implementing the many-to-many relationship between notes and tags.
 
@@ -617,28 +662,24 @@ noteId
 tagId
 ```
 
-## Migration
+## Migrations
 
-The initial Prisma migration has been created and successfully applied.
-
-Migration status:
+The database has migrations for:
 
 ```text
-Database schema is up to date!
+Initial database schema
+Google authentication fields
 ```
 
-Current PostgreSQL tables:
+The Google authentication migration was created and successfully applied.
+
+Example migration:
 
 ```text
-Collection
-Note
-NoteTag
-Tag
-User
-_prisma_migrations
+20260809082050_add_google_auth
 ```
 
-`_prisma_migrations` is Prisma's internal migration tracking table.
+Migration status has been verified successfully.
 
 ## Prisma Validation
 
@@ -690,7 +731,9 @@ The first database-backed API has been implemented:
 GET /api/notes
 ```
 
-The route queries PostgreSQL through Prisma:
+The route queries PostgreSQL through Prisma.
+
+Current flow:
 
 ```text
 GET /api/notes
@@ -719,13 +762,20 @@ This endpoint has been tested successfully.
 ## Current Backend API
 
 ```text
-GET /api/health
-GET /api/notes
+GET  /api/health
+GET  /api/notes
+
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/me
+
+GET  /api/auth/google
+GET  /api/auth/google/callback
 ```
 
 ## End-to-End Verification
 
-The following complete flow has been successfully tested:
+The database-backed notes flow has been tested:
 
 ```text
 HTTP Request
@@ -753,6 +803,406 @@ Note: The commit message contains a minor spacing typo (`withbackend`). The comm
 
 ---
 
+# Phase 8 — Authentication
+
+Authentication is now implemented as a working backend milestone.
+
+The current authentication implementation supports:
+
+- Email/password registration
+- Password hashing
+- Email/password login
+- JWT access tokens
+- JWT verification middleware
+- Current authenticated-user endpoint
+- Google OAuth
+- Google account linking
+- Google-only accounts
+- Authentication API tests
+
+---
+
+## Email/Password Registration
+
+Endpoint:
+
+```http
+POST /api/auth/register
+```
+
+Flow:
+
+```text
+Request
+  ↓
+Validate email/password
+  ↓
+Normalize email
+  ↓
+Check existing user
+  ↓
+Hash password with bcryptjs
+  ↓
+Create User with Prisma
+  ↓
+Return safe user data
+```
+
+Registration validates:
+
+```text
+Valid email
+Password >= 8 characters
+```
+
+Emails are normalized to lowercase.
+
+Duplicate email addresses return:
+
+```http
+409 Conflict
+```
+
+Example safe response:
+
+```json
+{
+  "user": {
+    "id": "...",
+    "email": "...",
+    "createdAt": "..."
+  }
+}
+```
+
+The password and password hash are never returned.
+
+---
+
+## Password Hashing
+
+Passwords are hashed using:
+
+```text
+bcryptjs
+```
+
+The current implementation uses a bcrypt cost factor of:
+
+```text
+12
+```
+
+Plain-text passwords are never stored in the database.
+
+---
+
+## Email/Password Login
+
+Endpoint:
+
+```http
+POST /api/auth/login
+```
+
+Flow:
+
+```text
+Request
+  ↓
+Validate credentials
+  ↓
+Normalize email
+  ↓
+Find user
+  ↓
+Verify password
+  ↓
+Generate JWT
+  ↓
+Return token + safe user
+```
+
+Invalid credentials return:
+
+```json
+{
+  "message": "Invalid email or password"
+}
+```
+
+Google-only accounts cannot authenticate through password login because their `passwordHash` is `null`.
+
+---
+
+## JWT Authentication
+
+JWTs are generated using:
+
+```text
+jsonwebtoken
+```
+
+The token contains the authenticated user's ID.
+
+JWT secret configuration is validated through the environment schema.
+
+The current JWT expiry is:
+
+```text
+1 hour
+```
+
+The JWT secret must be at least 32 characters long.
+
+---
+
+## Authentication Middleware
+
+Authentication middleware is located at:
+
+```text
+apps/backend/src/middleware/auth.middleware.ts
+```
+
+It expects:
+
+```http
+Authorization: Bearer <token>
+```
+
+The middleware:
+
+```text
+Read Authorization header
+        ↓
+Extract Bearer token
+        ↓
+Verify JWT
+        ↓
+Validate userId payload
+        ↓
+Attach authenticated user to request
+        ↓
+Continue to protected route
+```
+
+Invalid or expired tokens return:
+
+```http
+401 Unauthorized
+```
+
+---
+
+## Current User API
+
+Endpoint:
+
+```http
+GET /api/auth/me
+```
+
+Required header:
+
+```http
+Authorization: Bearer <JWT>
+```
+
+The endpoint returns the authenticated user's safe information:
+
+```json
+{
+  "user": {
+    "id": "...",
+    "email": "...",
+    "createdAt": "..."
+  }
+}
+```
+
+The user's password hash is never exposed.
+
+---
+
+# Google OAuth
+
+Google OAuth has been implemented using:
+
+```text
+googleapis
+```
+
+Google configuration is located at:
+
+```text
+apps/backend/src/config/google.ts
+```
+
+The backend environment configuration supports:
+
+```env
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_CALLBACK_URL=...
+```
+
+## Google Authorization
+
+Endpoint:
+
+```http
+GET /api/auth/google
+```
+
+The endpoint generates the Google authorization URL and redirects the browser to Google.
+
+Requested scopes:
+
+```text
+openid
+email
+profile
+```
+
+## Google Callback
+
+Endpoint:
+
+```http
+GET /api/auth/google/callback
+```
+
+The callback:
+
+```text
+Receive authorization code
+        ↓
+Exchange code for Google tokens
+        ↓
+Verify Google ID token
+        ↓
+Read Google account information
+        ↓
+Find existing Google user
+        ↓
+Fallback to existing email
+        ↓
+Link Google account when appropriate
+        ↓
+Create user when necessary
+```
+
+The Google identity is identified using:
+
+```text
+Google subject (sub)
+```
+
+and stored as:
+
+```text
+googleId
+```
+
+## Google Account Linking
+
+If a Google account's email already exists as a normal MemDev user, the implementation can link the Google identity to that existing user.
+
+If a matching Google account does not exist, a new user is created.
+
+Google-only accounts have:
+
+```text
+passwordHash = null
+googleId = <Google subject>
+```
+
+## Google OAuth Verification
+
+Google OAuth has been manually verified locally.
+
+The following flow was successfully tested:
+
+```text
+MemDev
+  ↓
+Google authorization
+  ↓
+Google callback
+  ↓
+Authorization successful
+  ↓
+User created / linked
+  ↓
+Same user ID returned through /me
+```
+
+Automated Google OAuth tests are not currently included because the OAuth provider interaction is external.
+
+---
+
+# Authentication Testing
+
+Authentication API tests were added using:
+
+```text
+Vitest
+Supertest
+```
+
+Test file:
+
+```text
+apps/backend/tests/auth.routes.test.ts
+```
+
+Vitest configuration:
+
+```text
+apps/backend/vitest.config.ts
+```
+
+The current automated authentication suite contains **9 passing tests**.
+
+## Registration tests
+
+```text
+1. Rejects invalid email and short password
+2. Creates a user with a hashed password
+3. Rejects an existing email
+```
+
+## Login tests
+
+```text
+4. Rejects invalid login data
+5. Rejects an unknown user
+6. Logs in a user with valid credentials
+7. Rejects a Google-only account using password login
+```
+
+## Current-user tests
+
+```text
+8. Rejects requests without authentication
+9. Rejects an invalid JWT
+```
+
+Prisma is mocked during these tests so that authentication tests do not modify the development database.
+
+## Authentication Validation
+
+The following commands currently pass:
+
+```bash
+pnpm --filter @memdev/backend test
+pnpm --filter @memdev/backend build
+pnpm --filter @memdev/backend lint
+```
+
+---
+
 # Current System Architecture
 
 The current working architecture is:
@@ -763,16 +1213,23 @@ The current working architecture is:
              ┌──────────────┴──────────────┐
              │                             │
              ▼                             ▼
-        React Web                    Express API
-        localhost:5173               localhost:5000
+        React Web                   Express API
+        localhost:5173              localhost:5000
              │                             │
              │                             ▼
-             │                       API Routes
+             │                        API Routes
+             │                             │
+             │              ┌──────────────┴──────────────┐
+             │              │                             │
+             │              ▼                             ▼
+             │       Authentication                    Notes
+             │              │                             │
+             │              └──────────────┬──────────────┘
              │                             │
              │                             ▼
              │                       Prisma Client
              │                             │
-             │                        PrismaPg
+             │                         PrismaPg
              │                             │
              │                             ▼
              │                       PostgreSQL 18
@@ -780,15 +1237,15 @@ The current working architecture is:
              │                         memdev DB
              │
              └──────── Future integration ────────┐
-                                                  │
-                                                  ▼
-                                           Chrome Extension
-                                                  │
-                                                  ▼
-                                           Web Clipping
-                                                  │
-                                                  ▼
-                                            Backend API
+                                                   │
+                                                   ▼
+                                            Chrome Extension
+                                                   │
+                                                   ▼
+                                             Web Clipping
+                                                   │
+                                                   ▼
+                                              Backend API
 
 Future:
 
@@ -805,160 +1262,178 @@ Summarization / AI Tags
 
 ## Frontend
 
-* [x] React application
-* [x] TypeScript
-* [x] Vite
-* [x] Tailwind CSS
-* [x] React Router
-* [x] TanStack Query
-* [x] Lucide React
-* [x] Landing page
-* [x] Login page foundation
-* [x] Register page foundation
-* [x] Dashboard page foundation
-* [x] Frontend build
-* [x] Frontend lint
+- [x] React application
+- [x] TypeScript
+- [x] Vite
+- [x] Tailwind CSS
+- [x] React Router
+- [x] TanStack Query
+- [x] Lucide React
+- [x] Landing page
+- [x] Login page foundation
+- [x] Register page foundation
+- [x] Dashboard page foundation
+- [x] Frontend build
+- [x] Frontend lint
 
 ## Backend
 
-* [x] Express server
-* [x] TypeScript
-* [x] CORS
-* [x] Zod environment validation
-* [x] API routing
-* [x] Health endpoint
-* [x] 404 handling
-* [x] Centralized error handling
-* [x] dotenv
-* [x] Backend build
-* [x] Backend lint
+- [x] Express server
+- [x] TypeScript
+- [x] CORS
+- [x] Zod environment validation
+- [x] API routing
+- [x] Health endpoint
+- [x] 404 handling
+- [x] Centralized error handling
+- [x] dotenv
+- [x] Backend build
+- [x] Backend lint
+- [x] User registration API
+- [x] Registration validation
+- [x] Password hashing with bcryptjs
+- [x] User login API
+- [x] JWT access-token generation
+- [x] JWT authentication middleware
+- [x] Current-user endpoint
+- [x] Google OAuth
+- [x] Google account linking
+- [x] Authentication API tests
 
 ## Database
 
-* [x] PostgreSQL 18.3
-* [x] Local `memdev` database
-* [x] Prisma 7.9.1
-* [x] Prisma Client
-* [x] PostgreSQL Prisma adapter
-* [x] Prisma configuration
-* [x] Database schema
-* [x] Initial migration
-* [x] Database migration verification
-* [x] Generated Prisma Client
-* [x] Database-backed Notes route
+- [x] PostgreSQL 18.3
+- [x] Local `memdev` database
+- [x] Prisma 7.9.1
+- [x] Prisma Client
+- [x] PostgreSQL Prisma adapter
+- [x] Prisma configuration
+- [x] Database schema
+- [x] Initial migration
+- [x] Google authentication migration
+- [x] Database migration verification
+- [x] Generated Prisma Client
+- [x] Database-backed Notes route
 
 ## Git
 
-* [x] Git repository
-* [x] GitHub remote
-* [x] Meaningful incremental commits
-* [x] `node_modules` excluded from Git
-* [x] Environment secrets excluded from Git
-* [x] Milestones pushed to GitHub
+- [x] Git repository
+- [x] GitHub remote
+- [x] Meaningful incremental commits
+- [x] `node_modules` excluded from Git
+- [x] Environment secrets excluded from Git
+- [x] Milestones pushed to GitHub
 
 ---
 
 # Not Implemented Yet
 
-The following functionality is still pending:
-
 ## Authentication
 
-* [ ] User registration
-* [ ] Password hashing
-* [ ] User login
-* [ ] JWT access tokens
-* [ ] JWT verification middleware
-* [ ] Protected routes
-* [ ] Logout/token invalidation
-* [ ] User-specific data isolation
+- [x] User registration
+- [x] Password hashing
+- [x] User login
+- [x] JWT access tokens
+- [x] JWT verification middleware
+- [x] Current-user endpoint
+- [x] Google OAuth
+- [x] Google account linking
+- [x] Authentication API tests
+- [ ] Logout/token invalidation
+- [ ] Frontend authentication state
+- [ ] Frontend login/register integration
+- [ ] Full user-specific data isolation across all protected resources
 
 ## Notes
 
-* [ ] Create note
-* [ ] Read note details
-* [ ] Update note
-* [ ] Delete note
-* [ ] Favorite note
-* [ ] Archive note
-* [ ] Restore archived note
-* [ ] Trash/delete workflow
-* [ ] Source URL support in UI
-* [ ] Summary support in UI
+- [ ] Create note
+- [ ] Read note details
+- [ ] Update note
+- [ ] Delete note
+- [ ] Favorite note
+- [ ] Archive note
+- [ ] Restore archived note
+- [ ] Trash/delete workflow
+- [ ] Source URL support in UI
+- [ ] Summary support in UI
+- [ ] User ownership enforcement for every note operation
+- [ ] Notes API tests
 
 ## Collections
 
-* [ ] Create collection
-* [ ] Rename collection
-* [ ] Delete collection
-* [ ] Assign notes to collections
-* [ ] Filter notes by collection
+- [ ] Create collection
+- [ ] Rename collection
+- [ ] Delete collection
+- [ ] Assign notes to collections
+- [ ] Filter notes by collection
 
 ## Tags
 
-* [ ] Create tags
-* [ ] Assign tags to notes
-* [ ] Remove tags
-* [ ] Filter by tags
-* [ ] Tag management UI
+- [ ] Create tags
+- [ ] Assign tags to notes
+- [ ] Remove tags
+- [ ] Filter by tags
+- [ ] Tag management UI
 
 ## Search
 
-* [ ] Keyword search
-* [ ] Search API
-* [ ] Search UI
-* [ ] Collection filtering
-* [ ] Tag filtering
-* [ ] Favorite filtering
-* [ ] Archived filtering
+- [ ] Keyword search
+- [ ] Search API
+- [ ] Search UI
+- [ ] Collection filtering
+- [ ] Tag filtering
+- [ ] Favorite filtering
+- [ ] Archived filtering
 
 ## Dashboard
 
-* [ ] Total notes statistic
-* [ ] Favorite count
-* [ ] Collection count
-* [ ] Recent notes
-* [ ] Recent activity
-* [ ] Dashboard data API
-* [ ] Dashboard UI integration
+- [ ] Total notes statistic
+- [ ] Favorite count
+- [ ] Collection count
+- [ ] Recent notes
+- [ ] Recent activity
+- [ ] Dashboard data API
+- [ ] Dashboard UI integration
 
 ## Browser Extension
 
-* [ ] Chrome Manifest V3 setup
-* [ ] Extension popup
-* [ ] Save current webpage
-* [ ] Capture page title
-* [ ] Capture source URL
-* [ ] Capture selected text/content
-* [ ] Send captured data to backend
-* [ ] Extension authentication
+- [ ] Chrome Manifest V3 setup
+- [ ] Extension popup
+- [ ] Save current webpage
+- [ ] Capture page title
+- [ ] Capture source URL
+- [ ] Capture selected text/content
+- [ ] Send captured data to backend
+- [ ] Extension authentication
 
 ## AI
 
-* [ ] OpenAI integration
-* [ ] Automatic note summarization
-* [ ] AI-generated tags
-* [ ] AI-assisted organization
-* [ ] AI error handling
-* [ ] AI usage controls
+- [ ] OpenAI integration
+- [ ] Automatic note summarization
+- [ ] AI-generated tags
+- [ ] AI-assisted organization
+- [ ] AI error handling
+- [ ] AI usage controls
 
 ## Testing
 
-* [ ] Backend unit tests
-* [ ] API integration tests
-* [ ] Authentication tests
-* [ ] Database tests
-* [ ] Frontend tests
-* [ ] End-to-end tests
+- [x] Authentication API tests
+- [ ] Notes API tests
+- [ ] Collections API tests
+- [ ] Tags API tests
+- [ ] Database tests
+- [ ] Frontend tests
+- [ ] End-to-end tests
+- [ ] Automated Google OAuth tests
 
 ## Deployment
 
-* [ ] Production environment configuration
-* [ ] Production PostgreSQL
-* [ ] Backend deployment
-* [ ] Frontend deployment
-* [ ] Extension packaging
-* [ ] Production OpenAI configuration
+- [ ] Production environment configuration
+- [ ] Production PostgreSQL
+- [ ] Backend deployment
+- [ ] Frontend deployment
+- [ ] Extension packaging
+- [ ] Production OpenAI configuration
 
 ---
 
@@ -974,8 +1449,8 @@ The project is intentionally being implemented incrementally.
 5.  PostgreSQL + Prisma                  ✓
 6.  Database Schema                      ✓
 7.  Prisma Backend Integration           ✓
-8.  Authentication                       → Next
-9.  Notes CRUD
+8.  Authentication                       ✓
+9.  Notes CRUD                            → Next
 10. Collections
 11. Tags
 12. Search & Filtering
@@ -1017,7 +1492,21 @@ Move to next milestone
 
 # Current Git History
 
-Recent commits:
+The repository is currently being developed on:
+
+```text
+main
+```
+
+with changes pushed to GitHub after each meaningful milestone.
+
+To inspect the latest history:
+
+```bash
+git log --oneline -n 15
+```
+
+The original project milestones include:
 
 ```text
 4d61c97  feat: integrate prisma withbackend
@@ -1033,13 +1522,7 @@ cd6ccf6  chore: setup React frontend
 736ae1e  restarting project
 ```
 
-The repository is currently being developed on:
-
-```text
-main
-```
-
-with changes pushed to GitHub after each meaningful milestone.
+Authentication and testing milestones were subsequently added after these commits.
 
 ---
 
@@ -1067,9 +1550,13 @@ Example structure:
 PORT=5000
 FRONTEND_URL=http://localhost:5173
 DATABASE_URL="postgresql://postgres:<password>@localhost:5432/memdev?schema=public"
+JWT_SECRET="<at-least-32-character-secret>"
+GOOGLE_CLIENT_ID="<google-client-id>"
+GOOGLE_CLIENT_SECRET="<google-client-secret>"
+GOOGLE_CALLBACK_URL="http://localhost:5000/api/auth/google/callback"
 ```
 
-The actual password must never be committed.
+The actual password and OAuth credentials must never be committed.
 
 The `.env` file must remain ignored by Git.
 
@@ -1123,6 +1610,12 @@ http://localhost:5000/api/health
 
 # Backend Commands
 
+## Development server
+
+```bash
+pnpm --filter @memdev/backend dev
+```
+
 ## Build
 
 ```bash
@@ -1135,10 +1628,10 @@ pnpm --filter @memdev/backend build
 pnpm --filter @memdev/backend lint
 ```
 
-## Development server
+## Tests
 
 ```bash
-pnpm --filter @memdev/backend dev
+pnpm --filter @memdev/backend test
 ```
 
 ---
@@ -1272,6 +1765,9 @@ feat: setup backend foundation
 feat: add backend architecture
 feat: add initial database schema
 feat: integrate prisma withbackend
+feat: add authentication
+feat: add google oauth
+test: add authentication API tests
 ```
 
 Before each milestone:
@@ -1310,7 +1806,7 @@ Each feature should be developed as a small, testable milestone.
 Example:
 
 ```text
-Registration
+Create Note
     ↓
 Build
     ↓
@@ -1322,7 +1818,7 @@ Fix errors
     ↓
 Commit
     ↓
-Login
+List Notes
 ```
 
 ## 2. Test before committing
@@ -1332,6 +1828,7 @@ At minimum, backend changes should pass:
 ```bash
 pnpm --filter @memdev/backend build
 pnpm --filter @memdev/backend lint
+pnpm --filter @memdev/backend test
 ```
 
 Frontend changes should pass:
@@ -1356,6 +1853,7 @@ Never commit:
 .env
 DATABASE_URL with password
 JWT secrets
+Google OAuth secrets
 OpenAI API keys
 ```
 
@@ -1368,20 +1866,41 @@ At minimum, keep checking:
 ```text
 GET /api/health
 GET /api/notes
+POST /api/auth/register
+POST /api/auth/login
+GET /api/auth/me
 ```
 
-## 5. Keep the architecture understandable
+## 5. Enforce user ownership
+
+All authenticated user resources must be scoped to the authenticated user's ID.
+
+For Notes this means:
+
+```text
+JWT
+ ↓
+Authenticated user ID
+ ↓
+Note query/create/update/delete
+ ↓
+Only that user's notes
+```
+
+Never allow a user to access another user's notes simply by knowing a note ID.
+
+## 6. Keep the architecture understandable
 
 The project is primarily intended to demonstrate strong software-development fundamentals.
 
 Avoid unnecessary:
 
-* Microservices
-* Kubernetes
-* Complex infrastructure
-* Distributed systems
-* Premature scalability work
-* Enterprise-level abstractions
+- Microservices
+- Kubernetes
+- Complex infrastructure
+- Distributed systems
+- Premature scalability work
+- Enterprise-level abstractions
 
 Prefer a clean, understandable monolithic backend with clear separation of concerns.
 
@@ -1408,12 +1927,12 @@ current source code
 
 as the project context.
 
-## Current checkpoint
+## Current Checkpoint
 
 The project is currently at:
 
 ```text
-Phase 7 — Prisma Backend Integration
+Phase 8 — Authentication
 ```
 
 Completed:
@@ -1432,33 +1951,126 @@ Prisma
 Database Schema
    ↓
 Prisma Backend Integration
+   ↓
+Registration
+   ↓
+Password Hashing
+   ↓
+Login
+   ↓
+JWT Authentication
+   ↓
+Authentication Middleware
+   ↓
+Current User
+   ↓
+Google OAuth
+   ↓
+Google Account Linking
+   ↓
+Authentication API Tests
 ```
 
 The next implementation milestone is:
 
 ```text
-Phase 8 — Authentication
+Phase 9 — Notes CRUD API
 ```
 
 Starting with:
 
 ```text
-User Registration
+Authenticated User
        ↓
-Password Hashing
+POST /api/notes
        ↓
-User Creation
+Validate note data
        ↓
-Login
+Create note with userId
        ↓
-JWT Access Token
+Persist with Prisma
        ↓
-Authentication Middleware
-       ↓
-Protected Routes
+Return safe note data
 ```
 
-The next Git milestone should be created after the authentication feature is implemented and tested.
+The authentication milestone has been implemented, tested, committed, and pushed before Phase 9 begins.
+
+---
+
+# Phase 9 — Notes CRUD API
+
+The next development phase is the Notes CRUD backend.
+
+The Note model already exists in Prisma.
+
+The implementation should build on the existing authentication middleware.
+
+## Phase 9 Goals
+
+```text
+Create Note
+     ↓
+List User Notes
+     ↓
+Get Note
+     ↓
+Update Note
+     ↓
+Delete / Trash Note
+     ↓
+Restore Note
+     ↓
+Favorite Note
+     ↓
+Archive Note
+```
+
+The most important rule is user isolation:
+
+```text
+Authenticated User A
+        ↓
+Can access only User A's notes
+
+Authenticated User B
+        ↓
+Can access only User B's notes
+```
+
+The first milestone should be:
+
+```text
+POST /api/notes
+```
+
+with validation for:
+
+```text
+title
+content
+sourceUrl
+collectionId
+```
+
+where optional fields remain optional according to the Prisma schema.
+
+The route should obtain the authenticated user's ID from the existing authentication middleware rather than accepting `userId` from the client.
+
+The implementation should be followed by:
+
+```text
+Build
+   ↓
+Lint
+   ↓
+API test
+   ↓
+User-isolation test
+   ↓
+Git commit
+   ↓
+Git push
+```
 
 ---
 

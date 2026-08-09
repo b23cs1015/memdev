@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { generateNoteSummary } from "../services/ai.service.js";
 
 import { prisma } from "../config/prisma.js";
 import {
@@ -234,5 +235,71 @@ router.delete("/:id", requireAuth, async (req, res, next) => {
     next(error);
   }
 });
+
+router.post(
+  "/:id/summarize",
+  requireAuth,
+  async (req, res, next) => {
+    try {
+      const authenticatedRequest =
+        req as AuthenticatedRequest;
+
+      const noteId = String(req.params.id);
+
+      const note = await prisma.note.findFirst({
+        where: {
+          id: noteId,
+          userId: authenticatedRequest.user.id,
+        },
+      });
+
+      if (!note) {
+        res.status(404).json({
+          message: "Note not found",
+        });
+        return;
+      }
+
+      try {
+        const summary = await generateNoteSummary(
+          note.title,
+          note.content,
+        );
+
+        if (!summary) {
+          res.status(503).json({
+            message:
+              "AI summarization is currently unavailable",
+          });
+          return;
+        }
+
+        const updatedNote = await prisma.note.update({
+          where: {
+            id: note.id,
+          },
+          data: {
+            summary,
+          },
+        });
+
+        res.status(200).json({
+          note: updatedNote,
+        });
+      } catch (error) {
+        console.error(
+          "AI summarization failed:",
+          error,
+        );
+
+        res.status(503).json({
+          message: "AI summarization failed",
+        });
+      }
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 export default router;

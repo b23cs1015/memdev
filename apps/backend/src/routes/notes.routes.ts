@@ -93,12 +93,19 @@ router.get("/", requireAuth, async (req, res, next) => {
     const authenticatedRequest = req as AuthenticatedRequest;
 
     const notes = await prisma.note.findMany({
-      where: {
+    where: {
         userId: authenticatedRequest.user.id,
-      },
-      orderBy: {
+    },
+    orderBy: {
         createdAt: "desc",
-      },
+    },
+    include: {
+        noteTags: {
+        include: {
+            tag: true,
+        },
+        },
+    },
     });
 
     res.status(200).json({

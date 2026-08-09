@@ -1,4 +1,5 @@
 import { Router } from "express";
+import notesRouter from "./notes.routes.js";
 
 const router = Router();
 
@@ -8,5 +9,7 @@ router.get("/health", (_req, res) => {
     service: "memdev-backend",
   });
 });
+
+router.use("/notes", notesRouter);
 
 export default router;

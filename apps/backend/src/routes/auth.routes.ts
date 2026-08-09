@@ -1,7 +1,9 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { z } from "zod";
 
+import { env } from "../config/env.js";
 import { prisma } from "../config/prisma.js";
 
 const router = Router();
@@ -11,6 +13,11 @@ const registerSchema = z.object({
   password: z
     .string()
     .min(8, "Password must be at least 8 characters long"),
+});
+
+const loginSchema = z.object({
+  email: z.string().trim().email("Please provide a valid email address"),
+  password: z.string().min(1, "Password is required"),
 });
 
 router.post("/register", async (req, res, next) => {
@@ -57,6 +64,69 @@ router.post("/register", async (req, res, next) => {
 
     res.status(201).json({
       user,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/login", async (req, res, next) => {
+  try {
+    const result = loginSchema.safeParse(req.body);
+
+    if (!result.success) {
+      res.status(400).json({
+        message: "Invalid login data",
+        errors: result.error.flatten().fieldErrors,
+      });
+      return;
+    }
+
+    const email = result.data.email.toLowerCase();
+    const { password } = result.data;
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+
+    if (!user) {
+      res.status(401).json({
+        message: "Invalid email or password",
+      });
+      return;
+    }
+
+    const passwordMatches = await bcrypt.compare(
+      password,
+      user.passwordHash,
+    );
+
+    if (!passwordMatches) {
+      res.status(401).json({
+        message: "Invalid email or password",
+      });
+      return;
+    }
+
+    const token = jwt.sign(
+      {
+        userId: user.id,
+      },
+      env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      },
+    );
+
+    res.status(200).json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        createdAt: user.createdAt,
+      },
     });
   } catch (error) {
     next(error);

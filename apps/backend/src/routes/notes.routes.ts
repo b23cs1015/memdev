@@ -12,9 +12,32 @@ const router = Router();
 const createNoteSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
   content: z.string().trim().min(1, "Content is required"),
-  sourceUrl: z.string().trim().url("Please provide a valid source URL").optional(),
+  sourceUrl: z
+    .string()
+    .trim()
+    .url("Please provide a valid source URL")
+    .optional(),
   collectionId: z.string().trim().min(1).optional(),
 });
+
+const updateNoteSchema = z
+  .object({
+    title: z.string().trim().min(1, "Title is required").optional(),
+    content: z.string().trim().min(1, "Content is required").optional(),
+    sourceUrl: z
+      .string()
+      .trim()
+      .url("Please provide a valid source URL")
+      .nullable()
+      .optional(),
+    collectionId: z.string().trim().min(1).nullable().optional(),
+    isFavorite: z.boolean().optional(),
+    isArchived: z.boolean().optional(),
+  })
+  .refine(
+    (data) => Object.keys(data).length > 0,
+    "At least one field must be provided",
+  );
 
 router.post("/", requireAuth, async (req, res, next) => {
   try {
@@ -80,6 +103,125 @@ router.get("/", requireAuth, async (req, res, next) => {
 
     res.status(200).json({
       notes,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/:id", requireAuth, async (req, res, next) => {
+  try {
+    const authenticatedRequest = req as AuthenticatedRequest;
+
+    const note = await prisma.note.findFirst({
+      where: {
+        id: String(req.params.id),
+        userId: authenticatedRequest.user.id,
+      },
+    });
+
+    if (!note) {
+      res.status(404).json({
+        message: "Note not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      note,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/:id", requireAuth, async (req, res, next) => {
+  try {
+    const result = updateNoteSchema.safeParse(req.body);
+
+    if (!result.success) {
+      res.status(400).json({
+        message: "Invalid note update data",
+        errors: result.error.flatten().fieldErrors,
+      });
+      return;
+    }
+
+    const authenticatedRequest = req as AuthenticatedRequest;
+
+    const existingNote = await prisma.note.findFirst({
+      where: {
+        id: String(req.params.id),
+        userId: authenticatedRequest.user.id,
+      },
+    });
+
+    if (!existingNote) {
+      res.status(404).json({
+        message: "Note not found",
+      });
+      return;
+    }
+
+    const { collectionId } = result.data;
+
+    if (collectionId) {
+      const collection = await prisma.collection.findFirst({
+        where: {
+          id: collectionId,
+          userId: authenticatedRequest.user.id,
+        },
+      });
+
+      if (!collection) {
+        res.status(404).json({
+          message: "Collection not found",
+        });
+        return;
+      }
+    }
+
+    const note = await prisma.note.update({
+      where: {
+        id: existingNote.id,
+      },
+      data: result.data,
+    });
+
+    res.status(200).json({
+      note,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete("/:id", requireAuth, async (req, res, next) => {
+  try {
+    const authenticatedRequest = req as AuthenticatedRequest;
+
+    const existingNote = await prisma.note.findFirst({
+      where: {
+        id: String(req.params.id),
+        userId: authenticatedRequest.user.id,
+      },
+    });
+
+    if (!existingNote) {
+      res.status(404).json({
+        message: "Note not found",
+      });
+      return;
+    }
+
+    await prisma.note.delete({
+      where: {
+        id: existingNote.id,
+      },
+    });
+
+    res.status(200).json({
+      message: "Note deleted successfully",
     });
   } catch (error) {
     next(error);

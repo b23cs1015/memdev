@@ -1,22 +1,36 @@
 import { Router } from "express";
+
+import {
+  requireAuth,
+  type AuthenticatedRequest,
+} from "../middleware/auth.middleware.js";
 import { prisma } from "../config/prisma.js";
 
 const router = Router();
 
-router.get("/", async (_req, res, next) => {
-  try {
-    const notes = await prisma.note.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+router.get(
+  "/",
+  requireAuth,
+  async (req, res, next) => {
+    try {
+      const authenticatedRequest = req as AuthenticatedRequest;
 
-    res.status(200).json({
-      notes,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+      const notes = await prisma.note.findMany({
+        where: {
+          userId: authenticatedRequest.user.id,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      res.status(200).json({
+        notes,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 export default router;

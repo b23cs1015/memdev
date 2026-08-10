@@ -1,4 +1,3 @@
-
 import {
   useEffect,
   useMemo,
@@ -17,6 +16,7 @@ import {
   Loader2,
   Plus,
   Search,
+  SlidersHorizontal,
   Trash2,
   X,
 } from "lucide-react";
@@ -42,6 +42,15 @@ type NoteFormProps = {
   onClose: () => void;
   onSaved: (note: Note) => void;
 };
+
+type ArchiveFilter = "active" | "archived" | "all";
+
+type SortOption =
+  | "newest"
+  | "oldest"
+  | "updated"
+  | "title-asc"
+  | "title-desc";
 
 function NoteForm({
   note,
@@ -444,7 +453,14 @@ function Notes() {
   const [tags, setTags] = useState<Tag[]>([]);
 
   const [search, setSearch] = useState("");
-  const [showArchived, setShowArchived] = useState(false);
+  const [collectionFilter, setCollectionFilter] =
+    useState("all");
+  const [tagFilter, setTagFilter] = useState("all");
+  const [favoriteOnly, setFavoriteOnly] = useState(false);
+  const [archiveFilter, setArchiveFilter] =
+    useState<ArchiveFilter>("active");
+  const [sortOption, setSortOption] =
+    useState<SortOption>("newest");
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -462,15 +478,21 @@ function Notes() {
       getCollections(),
       getTags(),
     ])
-      .then(([notesResponse, collectionsResponse, tagsResponse]) => {
-        if (!mounted) {
-          return;
-        }
+      .then(
+        ([
+          notesResponse,
+          collectionsResponse,
+          tagsResponse,
+        ]) => {
+          if (!mounted) {
+            return;
+          }
 
-        setNotes(notesResponse.notes);
-        setCollections(collectionsResponse.collections);
-        setTags(tagsResponse.tags);
-      })
+          setNotes(notesResponse.notes);
+          setCollections(collectionsResponse.collections);
+          setTags(tagsResponse.tags);
+        },
+      )
       .catch(() => {
         if (mounted) {
           setError(
@@ -492,36 +514,124 @@ function Notes() {
   const visibleNotes = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
 
-    return notes.filter((note) => {
-      if (!showArchived && note.isArchived) {
+    const filtered = notes.filter((note) => {
+      if (
+        archiveFilter === "active" &&
+        note.isArchived
+      ) {
         return false;
       }
 
-      if (!normalizedSearch) {
-        return true;
+      if (
+        archiveFilter === "archived" &&
+        !note.isArchived
+      ) {
+        return false;
       }
 
-      return (
-        note.title
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        note.content
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        note.summary
-          ?.toLowerCase()
-          .includes(normalizedSearch) ||
-        note.collection?.name
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        note.noteTags?.some((noteTag) =>
-          noteTag.tag.name
+      if (
+        collectionFilter !== "all" &&
+        note.collectionId !== collectionFilter
+      ) {
+        return false;
+      }
+
+      if (tagFilter !== "all") {
+        const hasSelectedTag = note.noteTags?.some(
+          (noteTag) => noteTag.tagId === tagFilter,
+        );
+
+        if (!hasSelectedTag) {
+          return false;
+        }
+      }
+
+      if (favoriteOnly && !note.isFavorite) {
+        return false;
+      }
+
+      if (normalizedSearch) {
+        const matchesSearch =
+          note.title
             .toLowerCase()
-            .includes(normalizedSearch),
-        )
-      );
+            .includes(normalizedSearch) ||
+          note.content
+            .toLowerCase()
+            .includes(normalizedSearch) ||
+          note.summary
+            ?.toLowerCase()
+            .includes(normalizedSearch) ||
+          note.collection?.name
+            .toLowerCase()
+            .includes(normalizedSearch) ||
+          note.noteTags?.some((noteTag) =>
+            noteTag.tag.name
+              .toLowerCase()
+              .includes(normalizedSearch),
+          );
+
+        if (!matchesSearch) {
+          return false;
+        }
+      }
+
+      return true;
     });
-  }, [notes, search, showArchived]);
+
+    return [...filtered].sort((a, b) => {
+      switch (sortOption) {
+        case "oldest":
+          return (
+            new Date(a.createdAt).getTime() -
+            new Date(b.createdAt).getTime()
+          );
+
+        case "updated":
+          return (
+            new Date(b.updatedAt).getTime() -
+            new Date(a.updatedAt).getTime()
+          );
+
+        case "title-asc":
+          return a.title.localeCompare(b.title);
+
+        case "title-desc":
+          return b.title.localeCompare(a.title);
+
+        case "newest":
+        default:
+          return (
+            new Date(b.createdAt).getTime() -
+            new Date(a.createdAt).getTime()
+          );
+      }
+    });
+  }, [
+    archiveFilter,
+    collectionFilter,
+    favoriteOnly,
+    notes,
+    search,
+    sortOption,
+    tagFilter,
+  ]);
+
+  const hasActiveFilters =
+    search.trim().length > 0 ||
+    collectionFilter !== "all" ||
+    tagFilter !== "all" ||
+    favoriteOnly ||
+    archiveFilter !== "active" ||
+    sortOption !== "newest";
+
+  function clearFilters() {
+    setSearch("");
+    setCollectionFilter("all");
+    setTagFilter("all");
+    setFavoriteOnly(false);
+    setArchiveFilter("active");
+    setSortOption("newest");
+  }
 
   function handleSaved(savedNote: Note) {
     setNotes((current) => {
@@ -547,7 +657,14 @@ function Notes() {
 
       setNotes((current) =>
         current.map((item) =>
-          item.id === note.id ? response.note : item,
+          item.id === note.id
+            ? {
+                ...item,
+                ...response.note,
+                collection: item.collection,
+                noteTags: item.noteTags,
+              }
+            : item,
         ),
       );
     } catch {
@@ -563,7 +680,14 @@ function Notes() {
 
       setNotes((current) =>
         current.map((item) =>
-          item.id === note.id ? response.note : item,
+          item.id === note.id
+            ? {
+                ...item,
+                ...response.note,
+                collection: item.collection,
+                noteTags: item.noteTags,
+              }
+            : item,
         ),
       );
     } catch {
@@ -632,45 +756,139 @@ function Notes() {
         </button>
       </div>
 
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
-          <Search
-            size={17}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-          />
+      <div className="mt-8 rounded-xl border border-[#E7E7E2] bg-white p-4">
+        <div className="flex flex-col gap-3 lg:flex-row">
+          <div className="relative min-w-0 flex-1">
+            <Search
+              size={17}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+            />
 
-          <input
-            value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
-            }
-            placeholder="Search notes..."
-            className="w-full rounded-lg border border-[#E7E7E2] bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          />
+            <input
+              value={search}
+              onChange={(event) =>
+                setSearch(event.target.value)
+              }
+              placeholder="Search notes, tags, collections..."
+              className="w-full rounded-lg border border-[#E7E7E2] bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
+            <SlidersHorizontal size={15} />
+            Filters
+          </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() =>
-            setShowArchived((current) => !current)
-          }
-          className={[
-            "inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition",
-            showArchived
-              ? "border-slate-300 bg-slate-100 text-[#171717]"
-              : "border-[#E7E7E2] bg-white text-slate-500 hover:bg-slate-50 hover:text-[#171717]",
-          ].join(" ")}
-        >
-          {showArchived ? (
-            <ArchiveRestore size={17} />
-          ) : (
-            <Archive size={17} />
-          )}
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          <select
+            value={collectionFilter}
+            onChange={(event) =>
+              setCollectionFilter(event.target.value)
+            }
+            className="w-full rounded-lg border border-[#E7E7E2] bg-white px-3 py-2.5 text-sm text-slate-600 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            aria-label="Filter by collection"
+          >
+            <option value="all">All collections</option>
 
-          {showArchived
-            ? "Hide archived"
-            : "Show archived"}
-        </button>
+            {collections.map((collection) => (
+              <option
+                key={collection.id}
+                value={collection.id}
+              >
+                {collection.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={tagFilter}
+            onChange={(event) =>
+              setTagFilter(event.target.value)
+            }
+            className="w-full rounded-lg border border-[#E7E7E2] bg-white px-3 py-2.5 text-sm text-slate-600 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            aria-label="Filter by tag"
+          >
+            <option value="all">All tags</option>
+
+            {tags.map((tag) => (
+              <option key={tag.id} value={tag.id}>
+                #{tag.name}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            onClick={() =>
+              setFavoriteOnly((current) => !current)
+            }
+            className={[
+              "inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition",
+              favoriteOnly
+                ? "border-rose-200 bg-rose-50 text-rose-600"
+                : "border-[#E7E7E2] bg-white text-slate-500 hover:bg-slate-50 hover:text-[#171717]",
+            ].join(" ")}
+          >
+            <Heart
+              size={15}
+              fill={favoriteOnly ? "currentColor" : "none"}
+            />
+            Favorites
+          </button>
+
+          <select
+            value={archiveFilter}
+            onChange={(event) =>
+              setArchiveFilter(
+                event.target.value as ArchiveFilter,
+              )
+            }
+            className="w-full rounded-lg border border-[#E7E7E2] bg-white px-3 py-2.5 text-sm text-slate-600 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            aria-label="Filter by archive status"
+          >
+            <option value="active">Active notes</option>
+            <option value="archived">Archived notes</option>
+            <option value="all">All notes</option>
+          </select>
+
+          <select
+            value={sortOption}
+            onChange={(event) =>
+              setSortOption(
+                event.target.value as SortOption,
+              )
+            }
+            className="w-full rounded-lg border border-[#E7E7E2] bg-white px-3 py-2.5 text-sm text-slate-600 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            aria-label="Sort notes"
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="updated">
+              Recently updated
+            </option>
+            <option value="title-asc">Title A–Z</option>
+            <option value="title-desc">Title Z–A</option>
+          </select>
+        </div>
+
+        <div className="mt-3 flex flex-col gap-2 border-t border-[#E7E7E2] pt-3 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            {visibleNotes.length}{" "}
+            {visibleNotes.length === 1 ? "note" : "notes"}
+            {hasActiveFilters ? " matching your filters" : ""}
+          </span>
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="self-start font-medium text-blue-600 transition hover:text-blue-700 sm:self-auto"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -690,23 +908,32 @@ function Notes() {
             </div>
 
             <h2 className="mt-4 text-sm font-semibold">
-              {search
-                ? "No notes found"
-                : showArchived
-                  ? "No archived notes"
-                  : "Your library is empty"}
+              {hasActiveFilters
+                ? "No matching notes"
+                : "Your library is empty"}
             </h2>
 
             <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
-              {search
-                ? "Try a different search term."
+              {hasActiveFilters
+                ? "Try changing or clearing your search and filters."
                 : "Create your first note and start building your personal knowledge library."}
             </p>
 
-            {!search && !showArchived && (
+            {hasActiveFilters ? (
               <button
                 type="button"
-                onClick={() => setShowForm(true)}
+                onClick={clearFilters}
+                className="mt-5 rounded-lg border border-[#E7E7E2] px-4 py-2.5 text-sm font-medium transition hover:bg-slate-50"
+              >
+                Clear filters
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingNote(null);
+                  setShowForm(true);
+                }}
                 className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#171717] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
               >
                 <Plus size={16} />
@@ -730,17 +957,17 @@ function Notes() {
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0">
                         <Link
-                            to={`/notes/${note.id}`}
-                            className="truncate font-semibold transition hover:text-blue-600"
-                            >
-                            {note.title}
+                          to={`/notes/${note.id}`}
+                          className="truncate font-semibold transition hover:text-blue-600"
+                        >
+                          {note.title}
                         </Link>
 
                         <Link
-                            to={`/notes/${note.id}`}
-                            className="mt-1 block line-clamp-2 text-sm leading-6 text-slate-500 transition hover:text-slate-700"
-                            >
-                            {note.summary || note.content}
+                          to={`/notes/${note.id}`}
+                          className="mt-1 block line-clamp-2 text-sm leading-6 text-slate-500 transition hover:text-slate-700"
+                        >
+                          {note.summary || note.content}
                         </Link>
                       </div>
 

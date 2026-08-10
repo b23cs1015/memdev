@@ -98,8 +98,8 @@ export async function login(
 
 export async function register(
   payload: RegisterPayload,
-): Promise<AuthResponse> {
-  return request<AuthResponse>("/auth/register", {
+): Promise<{ user: User }> {
+  return request<{ user: User }>("/auth/register", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -203,83 +203,7 @@ export async function removeTagFromNote(
 }
 
 /* -------------------------------------------------------------------------- */
-/* Notes                                                                      */
-/* -------------------------------------------------------------------------- */
-
-export type Note = {
-  id: string;
-  userId: string;
-  collectionId: string | null;
-  title: string;
-  content: string;
-  sourceUrl: string | null;
-  summary: string | null;
-  isFavorite: boolean;
-  isArchived: boolean;
-  createdAt: string;
-  updatedAt: string;
-
-  collection?: Collection | null;
-  noteTags?: NoteTag[];
-};
-
-export type NotesResponse = {
-  notes: Note[];
-};
-
-export type NoteResponse = {
-  note: Note;
-};
-
-export type CreateNotePayload = {
-  title: string;
-  content: string;
-  sourceUrl?: string;
-  collectionId?: string;
-};
-
-export type UpdateNotePayload = {
-  title?: string;
-  content?: string;
-  sourceUrl?: string | null;
-  collectionId?: string | null;
-  isFavorite?: boolean;
-  isArchived?: boolean;
-};
-
-export async function getNotes(): Promise<NotesResponse> {
-  return request<NotesResponse>("/notes");
-}
-
-export async function createNote(
-  payload: CreateNotePayload,
-): Promise<NoteResponse> {
-  return request<NoteResponse>("/notes", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function updateNote(
-  noteId: string,
-  payload: UpdateNotePayload,
-): Promise<NoteResponse> {
-  return request<NoteResponse>(`/notes/${noteId}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function deleteNote(
-  noteId: string,
-): Promise<void> {
-  await request(`/notes/${noteId}`, {
-    method: "DELETE",
-  });
-}
-
-/* -------------------------------------------------------------------------- */
-/* Collections                                                                */
+/* Collections                                                               */
 /* -------------------------------------------------------------------------- */
 
 export type Collection = {
@@ -357,6 +281,99 @@ export async function deleteCollection(
   await request(`/collections/${collectionId}`, {
     method: "DELETE",
   });
+}
+
+/* -------------------------------------------------------------------------- */
+/* Notes                                                                      */
+/* -------------------------------------------------------------------------- */
+
+export type Note = {
+  id: string;
+  userId: string;
+  collectionId: string | null;
+  title: string;
+  content: string;
+  sourceUrl: string | null;
+  summary: string | null;
+  isFavorite: boolean;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+
+  collection?: Collection | null;
+  noteTags?: NoteTag[];
+};
+
+export type NotesResponse = {
+  notes: Note[];
+};
+
+export type NoteResponse = {
+  note: Note;
+};
+
+export type CreateNotePayload = {
+  title: string;
+  content: string;
+  sourceUrl?: string;
+  collectionId?: string;
+};
+
+export type UpdateNotePayload = {
+  title?: string;
+  content?: string;
+  sourceUrl?: string | null;
+  collectionId?: string | null;
+  isFavorite?: boolean;
+  isArchived?: boolean;
+};
+
+export async function getNotes(): Promise<NotesResponse> {
+  return request<NotesResponse>("/notes");
+}
+
+export async function getNote(
+  noteId: string,
+): Promise<NoteResponse> {
+  return request<NoteResponse>(`/notes/${noteId}`);
+}
+
+export async function createNote(
+  payload: CreateNotePayload,
+): Promise<NoteResponse> {
+  return request<NoteResponse>("/notes", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateNote(
+  noteId: string,
+  payload: UpdateNotePayload,
+): Promise<NoteResponse> {
+  return request<NoteResponse>(`/notes/${noteId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteNote(
+  noteId: string,
+): Promise<void> {
+  await request(`/notes/${noteId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function summarizeNote(
+  noteId: string,
+): Promise<NoteResponse> {
+  return request<NoteResponse>(
+    `/notes/${noteId}/summarize`,
+    {
+      method: "POST",
+    },
+  );
 }
 
 /* -------------------------------------------------------------------------- */

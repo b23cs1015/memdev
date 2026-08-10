@@ -1,9 +1,11 @@
+
 import {
   useEffect,
   useMemo,
   useState,
   type FormEvent,
 } from "react";
+import { Link } from "react-router-dom";
 import {
   Archive,
   ArchiveRestore,
@@ -727,13 +729,19 @@ function Notes() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0">
-                        <h2 className="truncate font-semibold">
-                          {note.title}
-                        </h2>
+                        <Link
+                            to={`/notes/${note.id}`}
+                            className="truncate font-semibold transition hover:text-blue-600"
+                            >
+                            {note.title}
+                        </Link>
 
-                        <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-500">
-                          {note.summary || note.content}
-                        </p>
+                        <Link
+                            to={`/notes/${note.id}`}
+                            className="mt-1 block line-clamp-2 text-sm leading-6 text-slate-500 transition hover:text-slate-700"
+                            >
+                            {note.summary || note.content}
+                        </Link>
                       </div>
 
                       <time

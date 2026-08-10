@@ -10,9 +10,9 @@ import Login from "./pages/Login/Login";
 import Register from "./pages/Register/Register";
 import Notes from "./pages/Notes/Notes";
 import NoteDetails from "./pages/Notes/NoteDetails";
-import Placeholder from "./pages/Placeholder/Placeholder";
 import Collections from "./pages/Collections/Collections";
 import CollectionDetails from "./pages/Collections/CollectionDetails";
+import Tags from "./pages/Tags/Tags";
 
 function LoadingScreen() {
   return (
@@ -120,12 +120,7 @@ function App() {
 
         <Route
           path="/tags"
-          element={
-            <Placeholder
-              title="Tags"
-              description="Manage tags across your knowledge library."
-            />
-          }
+          element={<Tags />}
         />
       </Route>
 

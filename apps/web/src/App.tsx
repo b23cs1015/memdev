@@ -9,6 +9,8 @@ import Login from "./pages/Login/Login";
 import Notes from "./pages/Notes/Notes";
 import Placeholder from "./pages/Placeholder/Placeholder";
 import Register from "./pages/Register/Register";
+import Collections from "./pages/Collections/Collections";
+import CollectionDetails from "./pages/Collections/CollectionDetails";
 
 function LoadingScreen() {
   return (
@@ -80,14 +82,11 @@ function App() {
 
         <Route path="/notes" element={<Notes />} />
 
+        <Route path="/collections" element={<Collections />} />
+
         <Route
-          path="/collections"
-          element={
-            <Placeholder
-              title="Collections"
-              description="Organize your knowledge into collections."
-            />
-          }
+          path="/collections/:id"
+          element={<CollectionDetails />}
         />
 
         <Route

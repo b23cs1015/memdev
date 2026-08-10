@@ -188,3 +188,80 @@ export async function deleteNote(noteId: string): Promise<void> {
     method: "DELETE",
   });
 }
+
+export type Collection = {
+  id: string;
+  userId: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    notes: number;
+  };
+};
+
+export type CollectionWithNotes = Collection & {
+  notes: Note[];
+};
+
+export type CollectionsResponse = {
+  collections: Collection[];
+};
+
+export type CollectionResponse = {
+  collection: Collection;
+};
+
+export type CollectionDetailsResponse = {
+  collection: CollectionWithNotes;
+};
+
+export type CreateCollectionPayload = {
+  name: string;
+};
+
+export type UpdateCollectionPayload = {
+  name: string;
+};
+
+export async function getCollections(): Promise<CollectionsResponse> {
+  return request<CollectionsResponse>("/collections");
+}
+
+export async function getCollection(
+  collectionId: string,
+): Promise<CollectionDetailsResponse> {
+  return request<CollectionDetailsResponse>(
+    `/collections/${collectionId}`,
+  );
+}
+
+export async function createCollection(
+  payload: CreateCollectionPayload,
+): Promise<CollectionResponse> {
+  return request<CollectionResponse>("/collections", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateCollection(
+  collectionId: string,
+  payload: UpdateCollectionPayload,
+): Promise<CollectionResponse> {
+  return request<CollectionResponse>(
+    `/collections/${collectionId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function deleteCollection(
+  collectionId: string,
+): Promise<void> {
+  await request(`/collections/${collectionId}`, {
+    method: "DELETE",
+  });
+}

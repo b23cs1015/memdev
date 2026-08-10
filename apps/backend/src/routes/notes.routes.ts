@@ -126,6 +126,14 @@ router.get("/:id", requireAuth, async (req, res, next) => {
         id: String(req.params.id),
         userId: authenticatedRequest.user.id,
       },
+      include: {
+        collection: true,
+        noteTags: {
+          include: {
+            tag: true,
+          },
+        },
+      },
     });
 
     if (!note) {

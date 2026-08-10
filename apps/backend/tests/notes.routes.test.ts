@@ -520,10 +520,18 @@ describe("Notes API", () => {
 
       expect(mockPrisma.note.findFirst).toHaveBeenCalledWith({
         where: {
-          id: "note-1",
-          userId: "user-1",
+            id: "note-1",
+            userId: "user-1",
         },
-      });
+        include: {
+            collection: true,
+            noteTags: {
+            include: {
+                tag: true,
+            },
+            },
+        },
+        });
     });
 
     it("does not return a note belonging to another user", async () => {
@@ -544,10 +552,18 @@ describe("Notes API", () => {
 
       expect(mockPrisma.note.findFirst).toHaveBeenCalledWith({
         where: {
-          id: "other-user-note",
-          userId: "user-1",
+            id: "other-user-note",
+            userId: "user-1",
         },
-      });
+        include: {
+            collection: true,
+            noteTags: {
+            include: {
+                tag: true,
+            },
+            },
+        },
+        });
     });
   });
 

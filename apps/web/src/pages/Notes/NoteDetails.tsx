@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Archive,
   ArchiveRestore,
@@ -10,18 +10,24 @@ import {
   Hash,
   Heart,
   Loader2,
+  Plus,
   Sparkles,
   Trash2,
+  X,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import {
   ApiError,
+  attachTagToNote,
   deleteNote,
   getNote,
+  getTags,
+  removeTagFromNote,
   summarizeNote,
   updateNote,
   type Note,
+  type Tag,
 } from "../../lib/api";
 
 function formatDate(value: string) {
@@ -37,9 +43,17 @@ function NoteDetails() {
   const navigate = useNavigate();
 
   const [note, setNote] = useState<Note | null>(null);
+  const [tags, setTags] = useState<Tag[]>([]);
+
   const [isLoading, setIsLoading] = useState(Boolean(id));
+  const [isLoadingTags, setIsLoadingTags] = useState(true);
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  const [removingTagId, setRemovingTagId] = useState<string | null>(null);
+
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [isTagMenuOpen, setIsTagMenuOpen] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -79,6 +93,135 @@ function NoteDetails() {
       mounted = false;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    let mounted = true;
+
+    getTags()
+      .then((response) => {
+        if (mounted) {
+          setTags(response.tags);
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setError("Unable to load your tags.");
+        }
+      })
+      .finally(() => {
+        if (mounted) {
+          setIsLoadingTags(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
+
+  const availableTags = useMemo(() => {
+    if (!note) {
+      return tags;
+    }
+
+    const attachedTagIds = new Set(
+      (note.noteTags ?? []).map(
+        (noteTag) => noteTag.tagId,
+      ),
+    );
+
+    return tags.filter(
+      (tag) => !attachedTagIds.has(tag.id),
+    );
+  }, [note, tags]);
+
+  async function handleAddTag(tag: Tag) {
+    if (!note || isAddingTag) {
+      return;
+    }
+
+    setIsAddingTag(true);
+    setError("");
+
+    try {
+      const response = await attachTagToNote(
+        note.id,
+        tag.id,
+      );
+
+      setNote((currentNote) => {
+        if (!currentNote) {
+          return currentNote;
+        }
+
+        const existingNoteTags =
+          currentNote.noteTags ?? [];
+
+        if (
+          existingNoteTags.some(
+            (noteTag) => noteTag.tagId === tag.id,
+          )
+        ) {
+          return currentNote;
+        }
+
+        return {
+          ...currentNote,
+          noteTags: [
+            ...existingNoteTags,
+            response.noteTag,
+          ],
+        };
+      });
+
+      setIsTagMenuOpen(false);
+    } catch (requestError: unknown) {
+      if (
+        requestError instanceof ApiError &&
+        requestError.status === 409
+      ) {
+        setError("This tag is already attached.");
+      } else {
+        setError("Unable to add this tag.");
+      }
+    } finally {
+      setIsAddingTag(false);
+    }
+  }
+
+  async function handleRemoveTag(tagId: string) {
+    if (!note || removingTagId) {
+      return;
+    }
+
+    setRemovingTagId(tagId);
+    setError("");
+
+    try {
+      await removeTagFromNote(note.id, tagId);
+
+      setNote((currentNote) => {
+        if (!currentNote) {
+          return currentNote;
+        }
+
+        return {
+          ...currentNote,
+          noteTags: (currentNote.noteTags ?? []).filter(
+            (noteTag) => noteTag.tagId !== tagId,
+          ),
+        };
+      });
+    } catch {
+      setError("Unable to remove this tag.");
+    } finally {
+      setRemovingTagId(null);
+    }
+  }
 
   async function handleToggleFavorite() {
     if (!note) {
@@ -161,7 +304,10 @@ function NoteDetails() {
     return (
       <div className="mx-auto max-w-2xl py-16 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-50">
-          <Trash2 size={20} className="text-slate-400" />
+          <Trash2
+            size={20}
+            className="text-slate-400"
+          />
         </div>
 
         <h1 className="mt-4 text-lg font-semibold">
@@ -201,7 +347,10 @@ function NoteDetails() {
     return (
       <div className="mx-auto max-w-2xl py-16 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-50">
-          <Trash2 size={20} className="text-slate-400" />
+          <Trash2
+            size={20}
+            className="text-slate-400"
+          />
         </div>
 
         <h1 className="mt-4 text-lg font-semibold">
@@ -430,6 +579,137 @@ function NoteDetails() {
               </div>
             </section>
 
+            <section className="border-t border-[#E7E7E2] pt-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Tags
+                </h2>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setIsTagMenuOpen((open) => !open)
+                  }
+                  disabled={
+                    isLoadingTags ||
+                    isAddingTag ||
+                    availableTags.length === 0
+                  }
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-[#171717] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Plus size={13} />
+                  Add tag
+                </button>
+              </div>
+
+              {note.noteTags &&
+                note.noteTags.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {note.noteTags.map((noteTag) => (
+                      <span
+                        key={noteTag.tagId}
+                        className="inline-flex items-center gap-1 rounded-full bg-slate-100 pl-2.5 pr-1 py-1 text-xs text-slate-600"
+                      >
+                        <Hash size={11} />
+                        {noteTag.tag.name}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleRemoveTag(
+                              noteTag.tagId,
+                            )
+                          }
+                          disabled={
+                            removingTagId ===
+                            noteTag.tagId
+                          }
+                          aria-label={`Remove ${noteTag.tag.name} tag`}
+                          className="ml-0.5 rounded-full p-0.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700 disabled:opacity-50"
+                        >
+                          {removingTagId ===
+                          noteTag.tagId ? (
+                            <Loader2
+                              size={11}
+                              className="animate-spin"
+                            />
+                          ) : (
+                            <X size={11} />
+                          )}
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+              {!note.noteTags?.length &&
+                !isTagMenuOpen && (
+                  <p className="mt-3 text-xs text-slate-400">
+                    No tags added to this note yet.
+                  </p>
+                )}
+
+              {isLoadingTags && (
+                <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
+                  <Loader2
+                    size={13}
+                    className="animate-spin"
+                  />
+                  Loading tags...
+                </div>
+              )}
+
+              {isTagMenuOpen && (
+                <div className="relative mt-3">
+                  <div className="overflow-hidden rounded-lg border border-[#E7E7E2] bg-white shadow-sm">
+                    {availableTags.length > 0 ? (
+                      <div className="max-h-52 overflow-y-auto py-1">
+                        {availableTags.map((tag) => (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() =>
+                              handleAddTag(tag)
+                            }
+                            disabled={isAddingTag}
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-slate-50 hover:text-[#171717] disabled:opacity-50"
+                          >
+                            <Hash size={13} />
+
+                            <span className="truncate">
+                              {tag.name}
+                            </span>
+
+                            {tag._count?.noteTags !==
+                              undefined && (
+                              <span className="ml-auto text-xs text-slate-400">
+                                {tag._count.noteTags}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="px-3 py-3 text-xs text-slate-400">
+                        {tags.length === 0
+                          ? "Create a tag first from the Tags page."
+                          : "All your tags are already attached."}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {!isLoadingTags &&
+                tags.length > 0 &&
+                availableTags.length === 0 &&
+                !isTagMenuOpen && (
+                  <p className="mt-2 text-xs text-slate-400">
+                    All available tags are already attached.
+                  </p>
+                )}
+            </section>
+
             {note.sourceUrl && (
               <section className="border-t border-[#E7E7E2] pt-6">
                 <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -462,27 +742,6 @@ function NoteDetails() {
                 </p>
               </section>
             )}
-
-            {note.noteTags &&
-              note.noteTags.length > 0 && (
-                <section className="border-t border-[#E7E7E2] pt-6">
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Tags
-                  </h2>
-
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {note.noteTags.map((noteTag) => (
-                      <span
-                        key={noteTag.tagId}
-                        className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600"
-                      >
-                        <Hash size={11} />
-                        {noteTag.tag.name}
-                      </span>
-                    ))}
-                  </div>
-                </section>
-              )}
           </div>
         </aside>
       </div>

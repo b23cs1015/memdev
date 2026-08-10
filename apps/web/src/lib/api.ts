@@ -58,6 +58,10 @@ async function request<T>(
   return data as T;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Auth                                                                      */
+/* -------------------------------------------------------------------------- */
+
 export type User = {
   id: string;
   email: string;
@@ -101,6 +105,107 @@ export async function register(
   });
 }
 
+export async function getCurrentUser(): Promise<MeResponse> {
+  return request<MeResponse>("/auth/me");
+}
+
+/* -------------------------------------------------------------------------- */
+/* Tags                                                                      */
+/* -------------------------------------------------------------------------- */
+
+export type Tag = {
+  id: string;
+  userId: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    noteTags: number;
+  };
+};
+
+export type TagsResponse = {
+  tags: Tag[];
+};
+
+export type TagResponse = {
+  tag: Tag;
+};
+
+export type NoteTag = {
+  id: string;
+  noteId: string;
+  tagId: string;
+  tag: Tag;
+};
+
+export type NoteTagResponse = {
+  noteTag: NoteTag;
+};
+
+export async function getTags(): Promise<TagsResponse> {
+  return request<TagsResponse>("/tags");
+}
+
+export async function createTag(
+  name: string,
+): Promise<TagResponse> {
+  return request<TagResponse>("/tags", {
+    method: "POST",
+    body: JSON.stringify({
+      name,
+    }),
+  });
+}
+
+export async function updateTag(
+  tagId: string,
+  name: string,
+): Promise<TagResponse> {
+  return request<TagResponse>(`/tags/${tagId}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      name,
+    }),
+  });
+}
+
+export async function deleteTag(
+  tagId: string,
+): Promise<void> {
+  await request(`/tags/${tagId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function attachTagToNote(
+  noteId: string,
+  tagId: string,
+): Promise<NoteTagResponse> {
+  return request<NoteTagResponse>(
+    `/tags/notes/${noteId}/${tagId}`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+export async function removeTagFromNote(
+  noteId: string,
+  tagId: string,
+): Promise<void> {
+  await request(
+    `/tags/notes/${noteId}/${tagId}`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Notes                                                                      */
+/* -------------------------------------------------------------------------- */
+
 export type Note = {
   id: string;
   userId: string;
@@ -113,28 +218,10 @@ export type Note = {
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
+
+  collection?: Collection | null;
+  noteTags?: NoteTag[];
 };
-
-export type DashboardStats = {
-  totalNotes: number;
-  favoriteNotes: number;
-  archivedNotes: number;
-  totalCollections: number;
-  totalTags: number;
-  recentNotes: Note[];
-};
-
-export type DashboardStatsResponse = {
-  stats: DashboardStats;
-};
-
-export async function getDashboardStats(): Promise<DashboardStatsResponse> {
-  return request<DashboardStatsResponse>("/dashboard/stats");
-}
-
-export async function getCurrentUser(): Promise<MeResponse> {
-  return request<MeResponse>("/auth/me");
-}
 
 export type NotesResponse = {
   notes: Note[];
@@ -183,11 +270,17 @@ export async function updateNote(
   });
 }
 
-export async function deleteNote(noteId: string): Promise<void> {
+export async function deleteNote(
+  noteId: string,
+): Promise<void> {
   await request(`/notes/${noteId}`, {
     method: "DELETE",
   });
 }
+
+/* -------------------------------------------------------------------------- */
+/* Collections                                                                */
+/* -------------------------------------------------------------------------- */
 
 export type Collection = {
   id: string;
@@ -266,86 +359,23 @@ export async function deleteCollection(
   });
 }
 
-export type Tag = {
-  id: string;
-  userId: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-  _count?: {
-    noteTags: number;
-  };
+/* -------------------------------------------------------------------------- */
+/* Dashboard                                                                  */
+/* -------------------------------------------------------------------------- */
+
+export type DashboardStats = {
+  totalNotes: number;
+  favoriteNotes: number;
+  archivedNotes: number;
+  totalCollections: number;
+  totalTags: number;
+  recentNotes: Note[];
 };
 
-export type TagsResponse = {
-  tags: Tag[];
+export type DashboardStatsResponse = {
+  stats: DashboardStats;
 };
 
-export type TagResponse = {
-  tag: Tag;
-};
-
-export type NoteTag = {
-  id: string;
-  noteId: string;
-  tagId: string;
-  tag: Tag;
-};
-
-export type NoteTagResponse = {
-  noteTag: NoteTag;
-};
-
-export async function getTags(): Promise<TagsResponse> {
-  return request<TagsResponse>("/tags");
-}
-
-export async function createTag(
-  name: string,
-): Promise<TagResponse> {
-  return request<TagResponse>("/tags", {
-    method: "POST",
-    body: JSON.stringify({
-      name,
-    }),
-  });
-}
-
-export async function updateTag(
-  tagId: string,
-  name: string,
-): Promise<TagResponse> {
-  return request<TagResponse>(`/tags/${tagId}`, {
-    method: "PATCH",
-    body: JSON.stringify({
-      name,
-    }),
-  });
-}
-
-export async function deleteTag(tagId: string): Promise<void> {
-  await request(`/tags/${tagId}`, {
-    method: "DELETE",
-  });
-}
-
-export async function attachTagToNote(
-  noteId: string,
-  tagId: string,
-): Promise<NoteTagResponse> {
-  return request<NoteTagResponse>(
-    `/tags/notes/${noteId}/${tagId}`,
-    {
-      method: "POST",
-    },
-  );
-}
-
-export async function removeTagFromNote(
-  noteId: string,
-  tagId: string,
-): Promise<void> {
-  await request(`/tags/notes/${noteId}/${tagId}`, {
-    method: "DELETE",
-  });
+export async function getDashboardStats(): Promise<DashboardStatsResponse> {
+  return request<DashboardStatsResponse>("/dashboard/stats");
 }

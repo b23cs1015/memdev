@@ -7,10 +7,10 @@ import Dashboard from "./pages/Dashboard/Dashboard";
 import Landing from "./pages/Landing/Landing";
 import Login from "./pages/Login/Login";
 import Notes from "./pages/Notes/Notes";
-import Placeholder from "./pages/Placeholder/Placeholder";
 import Register from "./pages/Register/Register";
 import Collections from "./pages/Collections/Collections";
 import CollectionDetails from "./pages/Collections/CollectionDetails";
+import Tags from "./pages/Tags/Tags";
 
 function LoadingScreen() {
   return (
@@ -89,15 +89,7 @@ function App() {
           element={<CollectionDetails />}
         />
 
-        <Route
-          path="/tags"
-          element={
-            <Placeholder
-              title="Tags"
-              description="Manage tags across your knowledge library."
-            />
-          }
-        />
+        <Route path="/tags" element={<Tags />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -101,6 +101,37 @@ export async function register(
   });
 }
 
+export type Note = {
+  id: string;
+  userId: string;
+  collectionId: string | null;
+  title: string;
+  content: string;
+  sourceUrl: string | null;
+  summary: string | null;
+  isFavorite: boolean;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DashboardStats = {
+  totalNotes: number;
+  favoriteNotes: number;
+  archivedNotes: number;
+  totalCollections: number;
+  totalTags: number;
+  recentNotes: Note[];
+};
+
+export type DashboardStatsResponse = {
+  stats: DashboardStats;
+};
+
+export async function getDashboardStats(): Promise<DashboardStatsResponse> {
+  return request<DashboardStatsResponse>("/dashboard/stats");
+}
+
 export async function getCurrentUser(): Promise<MeResponse> {
   return request<MeResponse>("/auth/me");
 }

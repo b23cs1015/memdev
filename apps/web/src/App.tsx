@@ -1,14 +1,14 @@
+import type { ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
-import { useAuth } from "./context/useAuth";
 import AppLayout from "./components/layout/AppLayout";
+import { useAuth } from "./context/useAuth";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Landing from "./pages/Landing/Landing";
 import Login from "./pages/Login/Login";
-import Register from "./pages/Register/Register";
+import Notes from "./pages/Notes/Notes";
 import Placeholder from "./pages/Placeholder/Placeholder";
-
-import type { ReactNode } from "react";
+import Register from "./pages/Register/Register";
 
 function LoadingScreen() {
   return (
@@ -28,46 +28,6 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-
-  <Route
-      element={
-        <ProtectedRoute>
-          <AppLayout />
-        </ProtectedRoute>
-      }
-    >
-      <Route path="/dashboard" element={<Dashboard />} />
-
-      <Route
-        path="/notes"
-        element={
-          <Placeholder
-            title="Notes"
-            description="Browse and manage your saved notes."
-          />
-        }
-      />
-
-      <Route
-        path="/collections"
-        element={
-          <Placeholder
-            title="Collections"
-            description="Organize your knowledge into collections."
-          />
-        }
-      />
-
-      <Route
-        path="/tags"
-        element={
-          <Placeholder
-            title="Tags"
-            description="Manage tags across your knowledge library."
-          />
-        }
-      />
-    </Route>
 
   return children;
 }
@@ -117,6 +77,28 @@ function App() {
         }
       >
         <Route path="/dashboard" element={<Dashboard />} />
+
+        <Route path="/notes" element={<Notes />} />
+
+        <Route
+          path="/collections"
+          element={
+            <Placeholder
+              title="Collections"
+              description="Organize your knowledge into collections."
+            />
+          }
+        />
+
+        <Route
+          path="/tags"
+          element={
+            <Placeholder
+              title="Tags"
+              description="Manage tags across your knowledge library."
+            />
+          }
+        />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

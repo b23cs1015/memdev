@@ -135,3 +135,56 @@ export async function getDashboardStats(): Promise<DashboardStatsResponse> {
 export async function getCurrentUser(): Promise<MeResponse> {
   return request<MeResponse>("/auth/me");
 }
+
+export type NotesResponse = {
+  notes: Note[];
+};
+
+export type NoteResponse = {
+  note: Note;
+};
+
+export type CreateNotePayload = {
+  title: string;
+  content: string;
+  sourceUrl?: string;
+  collectionId?: string;
+};
+
+export type UpdateNotePayload = {
+  title?: string;
+  content?: string;
+  sourceUrl?: string | null;
+  collectionId?: string | null;
+  isFavorite?: boolean;
+  isArchived?: boolean;
+};
+
+export async function getNotes(): Promise<NotesResponse> {
+  return request<NotesResponse>("/notes");
+}
+
+export async function createNote(
+  payload: CreateNotePayload,
+): Promise<NoteResponse> {
+  return request<NoteResponse>("/notes", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateNote(
+  noteId: string,
+  payload: UpdateNotePayload,
+): Promise<NoteResponse> {
+  return request<NoteResponse>(`/notes/${noteId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteNote(noteId: string): Promise<void> {
+  await request(`/notes/${noteId}`, {
+    method: "DELETE",
+  });
+}

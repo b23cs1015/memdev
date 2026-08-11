@@ -4,7 +4,10 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import { Link } from "react-router-dom";
+import {
+  Link,
+  useSearchParams,
+} from "react-router-dom";
 import {
   Archive,
   ArchiveRestore,
@@ -59,25 +62,39 @@ function NoteForm({
   onClose,
   onSaved,
 }: NoteFormProps) {
-  const [title, setTitle] = useState(note?.title ?? "");
-  const [content, setContent] = useState(note?.content ?? "");
-  const [sourceUrl, setSourceUrl] = useState(note?.sourceUrl ?? "");
-
-  const [collectionId, setCollectionId] = useState(
-    note?.collectionId ?? "",
+  const [title, setTitle] = useState(
+    note?.title ?? "",
   );
 
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
-    note?.noteTags?.map((noteTag) => noteTag.tagId) ?? [],
+  const [content, setContent] = useState(
+    note?.content ?? "",
   );
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sourceUrl, setSourceUrl] = useState(
+    note?.sourceUrl ?? "",
+  );
+
+  const [collectionId, setCollectionId] =
+    useState(note?.collectionId ?? "");
+
+  const [selectedTagIds, setSelectedTagIds] =
+    useState<string[]>(
+      note?.noteTags?.map(
+        (noteTag) => noteTag.tagId,
+      ) ?? [],
+    );
+
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
   const [error, setError] = useState("");
 
   function toggleTag(tagId: string) {
     setSelectedTagIds((current) =>
       current.includes(tagId)
-        ? current.filter((id) => id !== tagId)
+        ? current.filter(
+            (id) => id !== tagId,
+          )
         : [...current, tagId],
     );
   }
@@ -87,23 +104,33 @@ function NoteForm({
     previousTagIds: string[],
     nextTagIds: string[],
   ) {
-    const previous = new Set(previousTagIds);
+    const previous = new Set(
+      previousTagIds,
+    );
+
     const next = new Set(nextTagIds);
 
     const tagsToAdd = nextTagIds.filter(
       (tagId) => !previous.has(tagId),
     );
 
-    const tagsToRemove = previousTagIds.filter(
-      (tagId) => !next.has(tagId),
-    );
+    const tagsToRemove =
+      previousTagIds.filter(
+        (tagId) => !next.has(tagId),
+      );
 
     await Promise.all([
       ...tagsToAdd.map((tagId) =>
-        attachTagToNote(noteId, tagId),
+        attachTagToNote(
+          noteId,
+          tagId,
+        ),
       ),
       ...tagsToRemove.map((tagId) =>
-        removeTagFromNote(noteId, tagId),
+        removeTagFromNote(
+          noteId,
+          tagId,
+        ),
       ),
     ]);
   }
@@ -115,8 +142,14 @@ function NoteForm({
 
     setError("");
 
-    if (!title.trim() || !content.trim()) {
-      setError("Title and content are required.");
+    if (
+      !title.trim() ||
+      !content.trim()
+    ) {
+      setError(
+        "Title and content are required.",
+      );
+
       return;
     }
 
@@ -124,15 +157,20 @@ function NoteForm({
 
     try {
       const previousTagIds =
-        note?.noteTags?.map((noteTag) => noteTag.tagId) ?? [];
+        note?.noteTags?.map(
+          (noteTag) => noteTag.tagId,
+        ) ?? [];
 
       if (note) {
-        const response = await updateNote(note.id, {
-          title: title.trim(),
-          content: content.trim(),
-          sourceUrl: sourceUrl.trim() || null,
-          collectionId: collectionId || null,
-        });
+        const response =
+          await updateNote(note.id, {
+            title: title.trim(),
+            content: content.trim(),
+            sourceUrl:
+              sourceUrl.trim() || null,
+            collectionId:
+              collectionId || null,
+          });
 
         await synchronizeTags(
           note.id,
@@ -142,15 +180,19 @@ function NoteForm({
 
         const updatedNote: Note = {
           ...response.note,
-          collectionId: collectionId || null,
+          collectionId:
+            collectionId || null,
           collection:
             collections.find(
-              (collection) => collection.id === collectionId,
+              (collection) =>
+                collection.id ===
+                collectionId,
             ) ?? null,
           noteTags: selectedTagIds
             .map((tagId) => {
               const tag = tags.find(
-                (item) => item.id === tagId,
+                (item) =>
+                  item.id === tagId,
               );
 
               if (!tag) {
@@ -160,8 +202,11 @@ function NoteForm({
               return {
                 id:
                   note.noteTags?.find(
-                    (noteTag) => noteTag.tagId === tagId,
-                  )?.id ?? `local-${tagId}`,
+                    (noteTag) =>
+                      noteTag.tagId ===
+                      tagId,
+                  )?.id ??
+                  `local-${tagId}`,
                 noteId: note.id,
                 tagId,
                 tag,
@@ -170,41 +215,55 @@ function NoteForm({
             .filter(
               (
                 item,
-              ): item is NonNullable<typeof item> =>
-                item !== null,
+              ): item is NonNullable<
+                typeof item
+              > => item !== null,
             ),
         };
 
         onSaved(updatedNote);
       } else {
-        const response = await createNote({
-          title: title.trim(),
-          content: content.trim(),
-          ...(sourceUrl.trim()
-            ? { sourceUrl: sourceUrl.trim() }
-            : {}),
-          ...(collectionId
-            ? { collectionId }
-            : {}),
-        });
+        const response =
+          await createNote({
+            title: title.trim(),
+            content: content.trim(),
+            ...(sourceUrl.trim()
+              ? {
+                  sourceUrl:
+                    sourceUrl.trim(),
+                }
+              : {}),
+            ...(collectionId
+              ? {
+                  collectionId,
+                }
+              : {}),
+          });
 
-        const attachedNoteTags = await Promise.all(
-          selectedTagIds.map(async (tagId) => {
-            const tagResponse = await attachTagToNote(
-              response.note.id,
-              tagId,
-            );
+        const attachedNoteTags =
+          await Promise.all(
+            selectedTagIds.map(
+              async (tagId) => {
+                const tagResponse =
+                  await attachTagToNote(
+                    response.note.id,
+                    tagId,
+                  );
 
-            return tagResponse.noteTag;
-          }),
-        );
+                return tagResponse.noteTag;
+              },
+            ),
+          );
 
         const createdNote: Note = {
           ...response.note,
-          collectionId: collectionId || null,
+          collectionId:
+            collectionId || null,
           collection:
             collections.find(
-              (collection) => collection.id === collectionId,
+              (collection) =>
+                collection.id ===
+                collectionId,
             ) ?? null,
           noteTags: attachedNoteTags,
         };
@@ -230,7 +289,9 @@ function NoteForm({
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#E7E7E2] bg-white px-6 py-4">
           <div>
             <h2 className="font-semibold">
-              {note ? "Edit note" : "New note"}
+              {note
+                ? "Edit note"
+                : "New note"}
             </h2>
 
             <p className="mt-0.5 text-xs text-slate-500">
@@ -272,7 +333,9 @@ function NoteForm({
               id="note-title"
               value={title}
               onChange={(event) =>
-                setTitle(event.target.value)
+                setTitle(
+                  event.target.value,
+                )
               }
               placeholder="e.g. Rate limiting"
               className="w-full rounded-lg border border-[#E7E7E2] px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -291,7 +354,9 @@ function NoteForm({
               id="note-content"
               value={content}
               onChange={(event) =>
-                setContent(event.target.value)
+                setContent(
+                  event.target.value,
+                )
               }
               placeholder="Write what you want to remember..."
               rows={8}
@@ -315,7 +380,9 @@ function NoteForm({
               type="url"
               value={sourceUrl}
               onChange={(event) =>
-                setSourceUrl(event.target.value)
+                setSourceUrl(
+                  event.target.value,
+                )
               }
               placeholder="https://..."
               className="w-full rounded-lg border border-[#E7E7E2] px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -343,7 +410,9 @@ function NoteForm({
                 id="note-collection"
                 value={collectionId}
                 onChange={(event) =>
-                  setCollectionId(event.target.value)
+                  setCollectionId(
+                    event.target.value,
+                  )
                 }
                 className="w-full appearance-none rounded-lg border border-[#E7E7E2] bg-white py-3 pl-10 pr-4 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               >
@@ -351,14 +420,16 @@ function NoteForm({
                   No collection
                 </option>
 
-                {collections.map((collection) => (
-                  <option
-                    key={collection.id}
-                    value={collection.id}
-                  >
-                    {collection.name}
-                  </option>
-                ))}
+                {collections.map(
+                  (collection) => (
+                    <option
+                      key={collection.id}
+                      value={collection.id}
+                    >
+                      {collection.name}
+                    </option>
+                  ),
+                )}
               </select>
             </div>
           </div>
@@ -372,29 +443,40 @@ function NoteForm({
                 </span>
               </label>
 
-              {selectedTagIds.length > 0 && (
+              {selectedTagIds.length >
+                0 && (
                 <span className="text-xs text-slate-400">
-                  {selectedTagIds.length} selected
+                  {
+                    selectedTagIds.length
+                  }{" "}
+                  selected
                 </span>
               )}
             </div>
 
             {tags.length === 0 ? (
               <div className="rounded-lg border border-dashed border-[#E7E7E2] px-4 py-4 text-sm text-slate-500">
-                No tags available yet. Create tags from the Tags
-                page.
+                No tags available yet.
+                Create tags from the
+                Tags page.
               </div>
             ) : (
               <div className="flex flex-wrap gap-2 rounded-lg border border-[#E7E7E2] p-3">
                 {tags.map((tag) => {
                   const selected =
-                    selectedTagIds.includes(tag.id);
+                    selectedTagIds.includes(
+                      tag.id,
+                    );
 
                   return (
                     <button
                       key={tag.id}
                       type="button"
-                      onClick={() => toggleTag(tag.id)}
+                      onClick={() =>
+                        toggleTag(
+                          tag.id,
+                        )
+                      }
                       className={[
                         "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
                         selected
@@ -446,29 +528,52 @@ function NoteForm({
 }
 
 function Notes() {
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [collections, setCollections] = useState<Collection[]>(
-    [],
-  );
-  const [tags, setTags] = useState<Tag[]>([]);
+  const [
+    searchParams,
+    setSearchParams,
+  ] = useSearchParams();
 
-  const [search, setSearch] = useState("");
+  const editNoteId =
+    searchParams.get("edit");
+
+  const [notes, setNotes] =
+    useState<Note[]>([]);
+
+  const [collections, setCollections] =
+    useState<Collection[]>([]);
+
+  const [tags, setTags] =
+    useState<Tag[]>([]);
+
+  const [search, setSearch] =
+    useState("");
+
   const [collectionFilter, setCollectionFilter] =
     useState("all");
-  const [tagFilter, setTagFilter] = useState("all");
-  const [favoriteOnly, setFavoriteOnly] = useState(false);
+
+  const [tagFilter, setTagFilter] =
+    useState("all");
+
+  const [favoriteOnly, setFavoriteOnly] =
+    useState(false);
+
   const [archiveFilter, setArchiveFilter] =
     useState<ArchiveFilter>("active");
+
   const [sortOption, setSortOption] =
     useState<SortOption>("newest");
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] =
+    useState(true);
 
-  const [showForm, setShowForm] = useState(false);
-  const [editingNote, setEditingNote] = useState<Note | null>(
-    null,
-  );
+  const [error, setError] =
+    useState("");
+
+  const [showForm, setShowForm] =
+    useState(false);
+
+  const [editingNote, setEditingNote] =
+    useState<Note | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -488,8 +593,14 @@ function Notes() {
             return;
           }
 
-          setNotes(notesResponse.notes);
-          setCollections(collectionsResponse.collections);
+          setNotes(
+            notesResponse.notes,
+          );
+
+          setCollections(
+            collectionsResponse.collections,
+          );
+
           setTags(tagsResponse.tags);
         },
       )
@@ -511,101 +622,162 @@ function Notes() {
     };
   }, []);
 
+  /*
+   * The URL is the source of truth for deep-link editing.
+   *
+   * /notes?edit=<note-id>
+   *
+   * Once the notes have loaded, editNote resolves to the
+   * requested note and the existing NoteForm is rendered.
+   *
+   * This avoids synchronously calling setState() inside an
+   * effect and therefore satisfies the project's
+   * react-hooks/set-state-in-effect lint rule.
+   */
+  const editNote = editNoteId
+    ? notes.find(
+        (note) =>
+          note.id === editNoteId,
+      ) ?? null
+    : null;
+
   const visibleNotes = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
+    const normalizedSearch =
+      search.trim().toLowerCase();
 
-    const filtered = notes.filter((note) => {
-      if (
-        archiveFilter === "active" &&
-        note.isArchived
-      ) {
-        return false;
-      }
-
-      if (
-        archiveFilter === "archived" &&
-        !note.isArchived
-      ) {
-        return false;
-      }
-
-      if (
-        collectionFilter !== "all" &&
-        note.collectionId !== collectionFilter
-      ) {
-        return false;
-      }
-
-      if (tagFilter !== "all") {
-        const hasSelectedTag = note.noteTags?.some(
-          (noteTag) => noteTag.tagId === tagFilter,
-        );
-
-        if (!hasSelectedTag) {
+    const filtered = notes.filter(
+      (note) => {
+        if (
+          archiveFilter ===
+            "active" &&
+          note.isArchived
+        ) {
           return false;
         }
-      }
 
-      if (favoriteOnly && !note.isFavorite) {
-        return false;
-      }
+        if (
+          archiveFilter ===
+            "archived" &&
+          !note.isArchived
+        ) {
+          return false;
+        }
 
-      if (normalizedSearch) {
-        const matchesSearch =
-          note.title
-            .toLowerCase()
-            .includes(normalizedSearch) ||
-          note.content
-            .toLowerCase()
-            .includes(normalizedSearch) ||
-          note.summary
-            ?.toLowerCase()
-            .includes(normalizedSearch) ||
-          note.collection?.name
-            .toLowerCase()
-            .includes(normalizedSearch) ||
-          note.noteTags?.some((noteTag) =>
-            noteTag.tag.name
+        if (
+          collectionFilter !==
+            "all" &&
+          note.collectionId !==
+            collectionFilter
+        ) {
+          return false;
+        }
+
+        if (tagFilter !== "all") {
+          const hasSelectedTag =
+            note.noteTags?.some(
+              (noteTag) =>
+                noteTag.tagId ===
+                tagFilter,
+            );
+
+          if (!hasSelectedTag) {
+            return false;
+          }
+        }
+
+        if (
+          favoriteOnly &&
+          !note.isFavorite
+        ) {
+          return false;
+        }
+
+        if (normalizedSearch) {
+          const matchesSearch =
+            note.title
               .toLowerCase()
-              .includes(normalizedSearch),
-          );
+              .includes(
+                normalizedSearch,
+              ) ||
+            note.content
+              .toLowerCase()
+              .includes(
+                normalizedSearch,
+              ) ||
+            note.summary
+              ?.toLowerCase()
+              .includes(
+                normalizedSearch,
+              ) ||
+            note.collection?.name
+              .toLowerCase()
+              .includes(
+                normalizedSearch,
+              ) ||
+            note.noteTags?.some(
+              (noteTag) =>
+                noteTag.tag.name
+                  .toLowerCase()
+                  .includes(
+                    normalizedSearch,
+                  ),
+            );
 
-        if (!matchesSearch) {
-          return false;
+          if (!matchesSearch) {
+            return false;
+          }
         }
-      }
 
-      return true;
-    });
+        return true;
+      },
+    );
 
-    return [...filtered].sort((a, b) => {
-      switch (sortOption) {
-        case "oldest":
-          return (
-            new Date(a.createdAt).getTime() -
-            new Date(b.createdAt).getTime()
-          );
+    return [...filtered].sort(
+      (a, b) => {
+        switch (sortOption) {
+          case "oldest":
+            return (
+              new Date(
+                a.createdAt,
+              ).getTime() -
+              new Date(
+                b.createdAt,
+              ).getTime()
+            );
 
-        case "updated":
-          return (
-            new Date(b.updatedAt).getTime() -
-            new Date(a.updatedAt).getTime()
-          );
+          case "updated":
+            return (
+              new Date(
+                b.updatedAt,
+              ).getTime() -
+              new Date(
+                a.updatedAt,
+              ).getTime()
+            );
 
-        case "title-asc":
-          return a.title.localeCompare(b.title);
+          case "title-asc":
+            return a.title.localeCompare(
+              b.title,
+            );
 
-        case "title-desc":
-          return b.title.localeCompare(a.title);
+          case "title-desc":
+            return b.title.localeCompare(
+              a.title,
+            );
 
-        case "newest":
-        default:
-          return (
-            new Date(b.createdAt).getTime() -
-            new Date(a.createdAt).getTime()
-          );
-      }
-    });
+          case "newest":
+          default:
+            return (
+              new Date(
+                b.createdAt,
+              ).getTime() -
+              new Date(
+                a.createdAt,
+              ).getTime()
+            );
+        }
+      },
+    );
   }, [
     archiveFilter,
     collectionFilter,
@@ -633,27 +805,42 @@ function Notes() {
     setSortOption("newest");
   }
 
-  function handleSaved(savedNote: Note) {
+  function handleSaved(
+    savedNote: Note,
+  ) {
     setNotes((current) => {
       const exists = current.some(
-        (note) => note.id === savedNote.id,
+        (note) =>
+          note.id === savedNote.id,
       );
 
       if (exists) {
         return current.map((note) =>
-          note.id === savedNote.id ? savedNote : note,
+          note.id === savedNote.id
+            ? savedNote
+            : note,
         );
       }
 
-      return [savedNote, ...current];
+      return [
+        savedNote,
+        ...current,
+      ];
     });
   }
 
-  async function handleToggleFavorite(note: Note) {
+  async function handleToggleFavorite(
+    note: Note,
+  ) {
     try {
-      const response = await updateNote(note.id, {
-        isFavorite: !note.isFavorite,
-      });
+      const response =
+        await updateNote(
+          note.id,
+          {
+            isFavorite:
+              !note.isFavorite,
+          },
+        );
 
       setNotes((current) =>
         current.map((item) =>
@@ -661,22 +848,33 @@ function Notes() {
             ? {
                 ...item,
                 ...response.note,
-                collection: item.collection,
-                noteTags: item.noteTags,
+                collection:
+                  item.collection,
+                noteTags:
+                  item.noteTags,
               }
             : item,
         ),
       );
     } catch {
-      setError("Unable to update favorite status.");
+      setError(
+        "Unable to update favorite status.",
+      );
     }
   }
 
-  async function handleToggleArchive(note: Note) {
+  async function handleToggleArchive(
+    note: Note,
+  ) {
     try {
-      const response = await updateNote(note.id, {
-        isArchived: !note.isArchived,
-      });
+      const response =
+        await updateNote(
+          note.id,
+          {
+            isArchived:
+              !note.isArchived,
+          },
+        );
 
       setNotes((current) =>
         current.map((item) =>
@@ -684,21 +882,28 @@ function Notes() {
             ? {
                 ...item,
                 ...response.note,
-                collection: item.collection,
-                noteTags: item.noteTags,
+                collection:
+                  item.collection,
+                noteTags:
+                  item.noteTags,
               }
             : item,
         ),
       );
     } catch {
-      setError("Unable to update archive status.");
+      setError(
+        "Unable to update archive status.",
+      );
     }
   }
 
-  async function handleDelete(note: Note) {
-    const confirmed = window.confirm(
-      `Delete "${note.title}"? This action cannot be undone.`,
-    );
+  async function handleDelete(
+    note: Note,
+  ) {
+    const confirmed =
+      window.confirm(
+        `Delete "${note.title}"? This action cannot be undone.`,
+      );
 
     if (!confirmed) {
       return;
@@ -708,10 +913,15 @@ function Notes() {
       await deleteNote(note.id);
 
       setNotes((current) =>
-        current.filter((item) => item.id !== note.id),
+        current.filter(
+          (item) =>
+            item.id !== note.id,
+        ),
       );
     } catch {
-      setError("Unable to delete this note.");
+      setError(
+        "Unable to delete this note.",
+      );
     }
   }
 
@@ -719,7 +929,10 @@ function Notes() {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <div className="flex items-center gap-2 text-sm text-slate-500">
-          <Loader2 size={17} className="animate-spin" />
+          <Loader2
+            size={17}
+            className="animate-spin"
+          />
           Loading your notes...
         </div>
       </div>
@@ -739,7 +952,8 @@ function Notes() {
           </h1>
 
           <p className="mt-2 text-sm text-slate-500">
-            Everything you've chosen to remember.
+            Everything you've chosen to
+            remember.
           </p>
         </div>
 
@@ -767,7 +981,9 @@ function Notes() {
             <input
               value={search}
               onChange={(event) =>
-                setSearch(event.target.value)
+                setSearch(
+                  event.target.value,
+                )
               }
               placeholder="Search notes, tags, collections..."
               className="w-full rounded-lg border border-[#E7E7E2] bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -775,7 +991,9 @@ function Notes() {
           </div>
 
           <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
-            <SlidersHorizontal size={15} />
+            <SlidersHorizontal
+              size={15}
+            />
             Filters
           </div>
         </div>
@@ -784,35 +1002,48 @@ function Notes() {
           <select
             value={collectionFilter}
             onChange={(event) =>
-              setCollectionFilter(event.target.value)
+              setCollectionFilter(
+                event.target.value,
+              )
             }
             className="w-full rounded-lg border border-[#E7E7E2] bg-white px-3 py-2.5 text-sm text-slate-600 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             aria-label="Filter by collection"
           >
-            <option value="all">All collections</option>
+            <option value="all">
+              All collections
+            </option>
 
-            {collections.map((collection) => (
-              <option
-                key={collection.id}
-                value={collection.id}
-              >
-                {collection.name}
-              </option>
-            ))}
+            {collections.map(
+              (collection) => (
+                <option
+                  key={collection.id}
+                  value={collection.id}
+                >
+                  {collection.name}
+                </option>
+              ),
+            )}
           </select>
 
           <select
             value={tagFilter}
             onChange={(event) =>
-              setTagFilter(event.target.value)
+              setTagFilter(
+                event.target.value,
+              )
             }
             className="w-full rounded-lg border border-[#E7E7E2] bg-white px-3 py-2.5 text-sm text-slate-600 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             aria-label="Filter by tag"
           >
-            <option value="all">All tags</option>
+            <option value="all">
+              All tags
+            </option>
 
             {tags.map((tag) => (
-              <option key={tag.id} value={tag.id}>
+              <option
+                key={tag.id}
+                value={tag.id}
+              >
                 #{tag.name}
               </option>
             ))}
@@ -821,7 +1052,10 @@ function Notes() {
           <button
             type="button"
             onClick={() =>
-              setFavoriteOnly((current) => !current)
+              setFavoriteOnly(
+                (current) =>
+                  !current,
+              )
             }
             className={[
               "inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition",
@@ -832,7 +1066,11 @@ function Notes() {
           >
             <Heart
               size={15}
-              fill={favoriteOnly ? "currentColor" : "none"}
+              fill={
+                favoriteOnly
+                  ? "currentColor"
+                  : "none"
+              }
             />
             Favorites
           </button>
@@ -841,42 +1079,68 @@ function Notes() {
             value={archiveFilter}
             onChange={(event) =>
               setArchiveFilter(
-                event.target.value as ArchiveFilter,
+                event.target
+                  .value as ArchiveFilter,
               )
             }
             className="w-full rounded-lg border border-[#E7E7E2] bg-white px-3 py-2.5 text-sm text-slate-600 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             aria-label="Filter by archive status"
           >
-            <option value="active">Active notes</option>
-            <option value="archived">Archived notes</option>
-            <option value="all">All notes</option>
+            <option value="active">
+              Active notes
+            </option>
+
+            <option value="archived">
+              Archived notes
+            </option>
+
+            <option value="all">
+              All notes
+            </option>
           </select>
 
           <select
             value={sortOption}
             onChange={(event) =>
               setSortOption(
-                event.target.value as SortOption,
+                event.target
+                  .value as SortOption,
               )
             }
             className="w-full rounded-lg border border-[#E7E7E2] bg-white px-3 py-2.5 text-sm text-slate-600 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             aria-label="Sort notes"
           >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
+            <option value="newest">
+              Newest first
+            </option>
+
+            <option value="oldest">
+              Oldest first
+            </option>
+
             <option value="updated">
               Recently updated
             </option>
-            <option value="title-asc">Title A–Z</option>
-            <option value="title-desc">Title Z–A</option>
+
+            <option value="title-asc">
+              Title A–Z
+            </option>
+
+            <option value="title-desc">
+              Title Z–A
+            </option>
           </select>
         </div>
 
         <div className="mt-3 flex flex-col gap-2 border-t border-[#E7E7E2] pt-3 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <span>
             {visibleNotes.length}{" "}
-            {visibleNotes.length === 1 ? "note" : "notes"}
-            {hasActiveFilters ? " matching your filters" : ""}
+            {visibleNotes.length === 1
+              ? "note"
+              : "notes"}
+            {hasActiveFilters
+              ? " matching your filters"
+              : ""}
           </span>
 
           {hasActiveFilters && (
@@ -898,7 +1162,8 @@ function Notes() {
       )}
 
       <div className="mt-6 overflow-hidden rounded-xl border border-[#E7E7E2] bg-white">
-        {visibleNotes.length === 0 ? (
+        {visibleNotes.length ===
+        0 ? (
           <div className="px-5 py-16 text-center">
             <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-slate-50">
               <FileText
@@ -922,7 +1187,9 @@ function Notes() {
             {hasActiveFilters ? (
               <button
                 type="button"
-                onClick={clearFilters}
+                onClick={
+                  clearFilters
+                }
                 className="mt-5 rounded-lg border border-[#E7E7E2] px-4 py-2.5 text-sm font-medium transition hover:bg-slate-50"
               >
                 Clear filters
@@ -931,7 +1198,9 @@ function Notes() {
               <button
                 type="button"
                 onClick={() => {
-                  setEditingNote(null);
+                  setEditingNote(
+                    null,
+                  );
                   setShowForm(true);
                 }}
                 className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#171717] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
@@ -943,176 +1212,236 @@ function Notes() {
           </div>
         ) : (
           <div className="divide-y divide-[#E7E7E2]">
-            {visibleNotes.map((note) => (
-              <article
-                key={note.id}
-                className="group px-5 py-5 transition hover:bg-[#FAFAF8]"
-              >
-                <div className="flex gap-4">
-                  <div className="mt-1 hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-400 sm:flex">
-                    <FileText size={17} />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0">
-                        <Link
-                          to={`/notes/${note.id}`}
-                          className="truncate font-semibold transition hover:text-blue-600"
-                        >
-                          {note.title}
-                        </Link>
-
-                        <Link
-                          to={`/notes/${note.id}`}
-                          className="mt-1 block line-clamp-2 text-sm leading-6 text-slate-500 transition hover:text-slate-700"
-                        >
-                          {note.summary || note.content}
-                        </Link>
-                      </div>
-
-                      <time
-                        dateTime={note.createdAt}
-                        className="shrink-0 text-xs text-slate-400"
-                      >
-                        {new Intl.DateTimeFormat("en", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        }).format(
-                          new Date(note.createdAt),
-                        )}
-                      </time>
+            {visibleNotes.map(
+              (note) => (
+                <article
+                  key={note.id}
+                  className="group px-5 py-5 transition hover:bg-[#FAFAF8]"
+                >
+                  <div className="flex gap-4">
+                    <div className="mt-1 hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-400 sm:flex">
+                      <FileText
+                        size={17}
+                      />
                     </div>
 
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      {note.collection && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-600">
-                          <Folder size={12} />
-                          {note.collection.name}
-                        </span>
-                      )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <Link
+                            to={`/notes/${note.id}`}
+                            className="truncate font-semibold transition hover:text-blue-600"
+                          >
+                            {note.title}
+                          </Link>
 
-                      {note.noteTags?.map((noteTag) => (
-                        <span
-                          key={noteTag.tagId}
-                          className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600"
-                        >
-                          <Hash size={12} />
-                          {noteTag.tag.name}
-                        </span>
-                      ))}
+                          <Link
+                            to={`/notes/${note.id}`}
+                            className="mt-1 block line-clamp-2 text-sm leading-6 text-slate-500 transition hover:text-slate-700"
+                          >
+                            {note.summary ||
+                              note.content}
+                          </Link>
+                        </div>
 
-                      {note.isFavorite && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-600">
-                          <Heart
-                            size={12}
-                            fill="currentColor"
-                          />
-                          Favorite
-                        </span>
-                      )}
-
-                      {note.isArchived && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500">
-                          <Archive size={12} />
-                          Archived
-                        </span>
-                      )}
-
-                      {note.sourceUrl && (
-                        <a
-                          href={note.sourceUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="max-w-[240px] truncate text-xs text-blue-600 hover:underline"
-                        >
-                          Source
-                        </a>
-                      )}
-
-                      <div className="ml-auto flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleToggleFavorite(note)
+                        <time
+                          dateTime={
+                            note.createdAt
                           }
-                          title={
-                            note.isFavorite
-                              ? "Remove favorite"
-                              : "Add favorite"
-                          }
-                          className="rounded-lg p-2 text-slate-400 transition hover:bg-white hover:text-rose-500"
+                          className="shrink-0 text-xs text-slate-400"
                         >
-                          <Heart
-                            size={16}
-                            fill={
-                              note.isFavorite
-                                ? "currentColor"
-                                : "none"
-                            }
-                          />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleToggleArchive(note)
-                          }
-                          title={
-                            note.isArchived
-                              ? "Restore note"
-                              : "Archive note"
-                          }
-                          className="rounded-lg p-2 text-slate-400 transition hover:bg-white hover:text-[#171717]"
-                        >
-                          {note.isArchived ? (
-                            <ArchiveRestore size={16} />
-                          ) : (
-                            <Archive size={16} />
+                          {new Intl.DateTimeFormat(
+                            "en",
+                            {
+                              month:
+                                "short",
+                              day: "numeric",
+                              year: "numeric",
+                            },
+                          ).format(
+                            new Date(
+                              note.createdAt,
+                            ),
                           )}
-                        </button>
+                        </time>
+                      </div>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingNote(note);
-                            setShowForm(true);
-                          }}
-                          title="Edit note"
-                          className="rounded-lg p-2 text-slate-400 transition hover:bg-white hover:text-[#171717]"
-                        >
-                          <Edit3 size={16} />
-                        </button>
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        {note.collection && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-600">
+                            <Folder
+                              size={12}
+                            />
+                            {
+                              note
+                                .collection
+                                .name
+                            }
+                          </span>
+                        )}
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleDelete(note)
-                          }
-                          title="Delete note"
-                          className="rounded-lg p-2 text-slate-400 transition hover:bg-white hover:text-red-600"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {note.noteTags?.map(
+                          (noteTag) => (
+                            <span
+                              key={
+                                noteTag.tagId
+                              }
+                              className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600"
+                            >
+                              <Hash
+                                size={12}
+                              />
+                              {
+                                noteTag
+                                  .tag
+                                  .name
+                              }
+                            </span>
+                          ),
+                        )}
+
+                        {note.isFavorite && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-600">
+                            <Heart
+                              size={12}
+                              fill="currentColor"
+                            />
+                            Favorite
+                          </span>
+                        )}
+
+                        {note.isArchived && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500">
+                            <Archive
+                              size={12}
+                            />
+                            Archived
+                          </span>
+                        )}
+
+                        {note.sourceUrl && (
+                          <a
+                            href={
+                              note.sourceUrl
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="max-w-[240px] truncate text-xs text-blue-600 hover:underline"
+                          >
+                            Source
+                          </a>
+                        )}
+
+                        <div className="ml-auto flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleToggleFavorite(
+                                note,
+                              )
+                            }
+                            title={
+                              note.isFavorite
+                                ? "Remove favorite"
+                                : "Add favorite"
+                            }
+                            className="rounded-lg p-2 text-slate-400 transition hover:bg-white hover:text-rose-500"
+                          >
+                            <Heart
+                              size={16}
+                              fill={
+                                note.isFavorite
+                                  ? "currentColor"
+                                  : "none"
+                              }
+                            />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleToggleArchive(
+                                note,
+                              )
+                            }
+                            title={
+                              note.isArchived
+                                ? "Restore note"
+                                : "Archive note"
+                            }
+                            className="rounded-lg p-2 text-slate-400 transition hover:bg-white hover:text-[#171717]"
+                          >
+                            {note.isArchived ? (
+                              <ArchiveRestore
+                                size={16}
+                              />
+                            ) : (
+                              <Archive
+                                size={16}
+                              />
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingNote(
+                                note,
+                              );
+                              setShowForm(
+                                true,
+                              );
+                            }}
+                            title="Edit note"
+                            className="rounded-lg p-2 text-slate-400 transition hover:bg-white hover:text-[#171717]"
+                          >
+                            <Edit3
+                              size={16}
+                            />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleDelete(
+                                note,
+                              )
+                            }
+                            title="Delete note"
+                            className="rounded-lg p-2 text-slate-400 transition hover:bg-white hover:text-red-600"
+                          >
+                            <Trash2
+                              size={16}
+                            />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              ),
+            )}
           </div>
         )}
       </div>
 
-      {showForm && (
+      {(showForm || editNote) && (
         <NoteForm
-          note={editingNote}
+          note={
+            editNote ??
+            editingNote
+          }
           collections={collections}
           tags={tags}
           onClose={() => {
             setShowForm(false);
             setEditingNote(null);
+
+            if (
+              searchParams.has("edit")
+            ) {
+              setSearchParams({});
+            }
           }}
           onSaved={handleSaved}
         />

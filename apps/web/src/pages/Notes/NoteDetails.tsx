@@ -551,8 +551,8 @@ function NoteDetails() {
                 <button
                   type="button"
                   onClick={() =>
-                    navigate(`/notes/${note.id}/edit`)
-                  }
+                    navigate(`/notes?edit=${note.id}`)
+                    }
                   className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-[#171717]"
                 >
                   <Edit3 size={16} />

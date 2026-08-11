@@ -12,13 +12,39 @@ const router = Router();
 
 const createNoteSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
-  content: z.string().trim().min(1, "Content is required"),
+
+  content: z
+    .string()
+    .trim()
+    .min(1, "Content is required"),
+
   sourceUrl: z
     .string()
     .trim()
     .url("Please provide a valid source URL")
     .optional(),
-  collectionId: z.string().trim().min(1).optional(),
+
+  sourceTitle: z
+    .string()
+    .trim()
+    .max(500)
+    .optional(),
+
+  sourceTextBefore: z
+    .string()
+    .max(2000)
+    .optional(),
+
+  sourceTextAfter: z
+    .string()
+    .max(2000)
+    .optional(),
+
+  collectionId: z
+    .string()
+    .trim()
+    .min(1)
+    .optional(),
 });
 
 const updateNoteSchema = z
@@ -52,8 +78,18 @@ router.post("/", requireAuth, async (req, res, next) => {
       return;
     }
 
-    const authenticatedRequest = req as AuthenticatedRequest;
-    const { title, content, sourceUrl, collectionId } = result.data;
+    const authenticatedRequest =
+        req as AuthenticatedRequest;
+
+        const {
+        title,
+        content,
+        sourceUrl,
+        sourceTitle,
+        sourceTextBefore,
+        sourceTextAfter,
+        collectionId,
+        } = result.data;
 
     if (collectionId) {
       const collection = await prisma.collection.findFirst({
@@ -72,14 +108,17 @@ router.post("/", requireAuth, async (req, res, next) => {
     }
 
     const note = await prisma.note.create({
-      data: {
-        userId: authenticatedRequest.user.id,
-        title,
-        content,
-        sourceUrl,
-        collectionId,
-      },
-    });
+        data: {
+            userId: authenticatedRequest.user.id,
+            title,
+            content,
+            sourceUrl,
+            sourceTitle,
+            sourceTextBefore,
+            sourceTextAfter,
+            collectionId,
+        },
+        });
 
     res.status(201).json({
       note,

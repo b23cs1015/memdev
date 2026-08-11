@@ -27,7 +27,12 @@ model Note {
 
   title        String
   content      String       @db.Text
+
   sourceUrl    String?
+  sourceTitle  String?
+  sourceTextBefore String? @db.Text
+  sourceTextAfter  String? @db.Text
+
   summary      String?      @db.Text
 
   isFavorite   Boolean      @default(false)

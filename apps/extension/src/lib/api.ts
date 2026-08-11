@@ -76,19 +76,32 @@ export type ExtensionUser = {
 export type CreateNotePayload = {
   title: string;
   content: string;
+
   sourceUrl?: string;
+  sourceTitle?: string;
+
+  sourceTextBefore?: string;
+  sourceTextAfter?: string;
 };
 
 export type Note = {
   id: string;
   userId: string;
   collectionId: string | null;
+
   title: string;
   content: string;
+
   sourceUrl: string | null;
+  sourceTitle: string | null;
+  sourceTextBefore: string | null;
+  sourceTextAfter: string | null;
+
   summary: string | null;
+
   isFavorite: boolean;
   isArchived: boolean;
+
   createdAt: string;
   updatedAt: string;
 };

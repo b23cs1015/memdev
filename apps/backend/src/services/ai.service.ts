@@ -1,10 +1,11 @@
 import { env } from "../config/env.js";
-import { openai } from "../config/openai.js";
+import { gemini } from "../config/gemini.js";
 
 const SUMMARY_INSTRUCTIONS = `
 You summarize notes for a personal knowledge management application.
 
 Rules:
+
 - Produce a concise summary.
 - Preserve the important facts and technical details.
 - Do not invent information.
@@ -18,17 +19,21 @@ export async function generateNoteSummary(
   title: string,
   content: string,
 ): Promise<string | null> {
-  if (!openai) {
+  if (!gemini) {
     return null;
   }
 
-  const response = await openai.responses.create({
-    model: env.OPENAI_MODEL,
-    instructions: SUMMARY_INSTRUCTIONS,
-    input: `Title: ${title}\n\nContent:\n${content}`,
+  const interaction = await gemini.interactions.create({
+    model: env.GEMINI_MODEL,
+    system_instruction: SUMMARY_INSTRUCTIONS,
+    input: `Title: ${title}
+
+Content:
+${content}`,
   });
 
-  const summary = response.output_text.trim();
+  const summary =
+    interaction.output_text?.trim() ?? "";
 
   if (!summary) {
     return null;

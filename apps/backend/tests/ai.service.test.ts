@@ -5,14 +5,13 @@ import {
   vi,
 } from "vitest";
 
-const mockResponsesCreate = vi.hoisted(
-  () => vi.fn(),
-);
+const mockInteractionsCreate =
+  vi.hoisted(() => vi.fn());
 
-vi.mock("../src/config/openai.js", () => ({
-  openai: {
-    responses: {
-      create: mockResponsesCreate,
+vi.mock("../src/config/gemini.js", () => ({
+  gemini: {
+    interactions: {
+      create: mockInteractionsCreate,
     },
   },
 }));
@@ -21,59 +20,70 @@ import { generateNoteSummary } from "../src/services/ai.service.js";
 
 describe("AI summarization service", () => {
   it("returns the generated summary", async () => {
-    mockResponsesCreate.mockResolvedValue({
+    mockInteractionsCreate.mockResolvedValue({
       output_text:
         "Rate limiting controls request frequency to protect services from excessive traffic.",
     });
 
-    const summary = await generateNoteSummary(
-      "Rate Limiting",
-      "Rate limiting controls request frequency.",
-    );
+    const summary =
+      await generateNoteSummary(
+        "Rate Limiting",
+        "Rate limiting controls request frequency.",
+      );
 
     expect(summary).toBe(
       "Rate limiting controls request frequency to protect services from excessive traffic.",
     );
 
-    expect(mockResponsesCreate).toHaveBeenCalledWith({
+    expect(
+      mockInteractionsCreate,
+    ).toHaveBeenCalledWith({
       model: expect.any(String),
-      instructions: expect.stringContaining(
-        "You summarize notes",
-      ),
+      system_instruction:
+        expect.stringContaining(
+          "You summarize notes",
+        ),
       input:
         "Title: Rate Limiting\n\nContent:\nRate limiting controls request frequency.",
     });
   });
 
   it("trims the generated summary", async () => {
-    mockResponsesCreate.mockResolvedValue({
-      output_text: "  A concise summary.  ",
+    mockInteractionsCreate.mockResolvedValue({
+      output_text:
+        "  A concise summary.  ",
     });
 
-    const summary = await generateNoteSummary(
-      "Test",
-      "Test content",
-    );
+    const summary =
+      await generateNoteSummary(
+        "Test",
+        "Test content",
+      );
 
-    expect(summary).toBe("A concise summary.");
+    expect(summary).toBe(
+      "A concise summary.",
+    );
   });
 
-  it("returns null when OpenAI returns empty output", async () => {
-    mockResponsesCreate.mockResolvedValue({
+  it("returns null when Gemini returns empty output", async () => {
+    mockInteractionsCreate.mockResolvedValue({
       output_text: "   ",
     });
 
-    const summary = await generateNoteSummary(
-      "Test",
-      "Test content",
-    );
+    const summary =
+      await generateNoteSummary(
+        "Test",
+        "Test content",
+      );
 
     expect(summary).toBeNull();
   });
 
   it("propagates provider errors", async () => {
-    mockResponsesCreate.mockRejectedValue(
-      new Error("OpenAI API unavailable"),
+    mockInteractionsCreate.mockRejectedValue(
+      new Error(
+        "Gemini API unavailable",
+      ),
     );
 
     await expect(
@@ -82,7 +92,7 @@ describe("AI summarization service", () => {
         "Test content",
       ),
     ).rejects.toThrow(
-      "OpenAI API unavailable",
+      "Gemini API unavailable",
     );
   });
 });

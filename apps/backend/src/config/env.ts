@@ -21,11 +21,11 @@ const envSchema = z.object({
 
   GOOGLE_CALLBACK_URL: z.url().optional(),
 
-  OPENAI_API_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
 
-  OPENAI_MODEL: z
+  GEMINI_MODEL: z
     .string()
-    .default("gpt-5-mini"),
+    .default("gemini-3.6-flash"),
 });
 
 export const env = envSchema.parse({
@@ -39,11 +39,15 @@ export const env = envSchema.parse({
 
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
 
-  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+  GOOGLE_CLIENT_SECRET:
+    process.env.GOOGLE_CLIENT_SECRET,
 
-  GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL,
+  GOOGLE_CALLBACK_URL:
+    process.env.GOOGLE_CALLBACK_URL,
 
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  GEMINI_API_KEY:
+    process.env.GEMINI_API_KEY,
 
-  OPENAI_MODEL: process.env.OPENAI_MODEL,
+  GEMINI_MODEL:
+    process.env.GEMINI_MODEL,
 });

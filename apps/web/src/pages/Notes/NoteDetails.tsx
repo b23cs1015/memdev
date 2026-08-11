@@ -11,6 +11,7 @@ import {
   Heart,
   Loader2,
   Plus,
+  RefreshCw,
   Sparkles,
   Trash2,
   X,
@@ -51,6 +52,8 @@ function NoteDetails() {
   const [removingTagId, setRemovingTagId] = useState<string | null>(null);
 
   const [isSummarizing, setIsSummarizing] = useState(false);
+  const [aiError, setAiError] = useState("");
+
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isTagMenuOpen, setIsTagMenuOpen] = useState(false);
@@ -67,6 +70,8 @@ function NoteDetails() {
       .then((response) => {
         if (mounted) {
           setNote(response.note);
+          setError("");
+          setAiError("");
         }
       })
       .catch((requestError: unknown) => {
@@ -233,7 +238,19 @@ function NoteDetails() {
         isFavorite: !note.isFavorite,
       });
 
-      setNote(response.note);
+      setNote((currentNote) => {
+        if (!currentNote) {
+          return response.note;
+        }
+
+        return {
+          ...currentNote,
+          ...response.note,
+          collection: currentNote.collection,
+          noteTags: currentNote.noteTags,
+        };
+      });
+
       setError("");
     } catch {
       setError("Unable to update favorite status.");
@@ -250,7 +267,19 @@ function NoteDetails() {
         isArchived: !note.isArchived,
       });
 
-      setNote(response.note);
+      setNote((currentNote) => {
+        if (!currentNote) {
+          return response.note;
+        }
+
+        return {
+          ...currentNote,
+          ...response.note,
+          collection: currentNote.collection,
+          noteTags: currentNote.noteTags,
+        };
+      });
+
       setError("");
     } catch {
       setError("Unable to update archive status.");
@@ -258,18 +287,41 @@ function NoteDetails() {
   }
 
   async function handleSummarize() {
-    if (!note) {
+    if (!note || isSummarizing) {
       return;
     }
 
-    setError("");
+    setAiError("");
     setIsSummarizing(true);
 
     try {
       const response = await summarizeNote(note.id);
-      setNote(response.note);
-    } catch {
-      setError("Unable to generate a summary right now.");
+
+      setNote((currentNote) => {
+        if (!currentNote) {
+          return response.note;
+        }
+
+        return {
+          ...currentNote,
+          ...response.note,
+          collection: currentNote.collection,
+          noteTags: currentNote.noteTags,
+        };
+      });
+    } catch (requestError: unknown) {
+      if (
+        requestError instanceof ApiError &&
+        requestError.status === 503
+      ) {
+        setAiError(
+          "AI summarization is temporarily unavailable. Please try again in a moment.",
+        );
+      } else {
+        setAiError(
+          "We couldn't generate a summary right now. Please try again.",
+        );
+      }
     } finally {
       setIsSummarizing(false);
     }
@@ -428,77 +480,136 @@ function NoteDetails() {
 
       <div className="flex flex-col gap-10 py-8 lg:flex-row">
         <main className="min-w-0 flex-1">
-          {note.summary ? (
-            <section className="mb-10 rounded-xl border border-blue-100 bg-blue-50/50 p-5">
-              <div className="flex items-center gap-2 text-sm font-semibold text-blue-700">
-                <Sparkles size={16} />
-                AI Summary
-              </div>
-
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                {note.summary}
-              </p>
-            </section>
-          ) : (
-            <section className="mb-10 rounded-xl border border-dashed border-[#E7E7E2] bg-white p-5">
+          <section className="mb-10 overflow-hidden rounded-2xl border border-[#E7E7E2] bg-white">
+            <div className="border-b border-[#E7E7E2] bg-[#FAFAF8] px-5 py-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="flex items-center gap-2 text-sm font-semibold">
-                    <Sparkles size={16} />
-                    No summary yet
-                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                      <Sparkles size={15} />
+                    </span>
 
-                  <p className="mt-1 text-xs text-slate-500">
-                    Generate a concise AI summary of this note.
-                  </p>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-sm font-semibold text-[#171717]">
+                          AI Summary
+                        </h2>
+
+                        {note.summary && (
+                          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-blue-600">
+                            Generated
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        A concise overview of your saved knowledge.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleSummarize}
-                  disabled={isSummarizing}
-                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[#171717] px-3.5 py-2 text-xs font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                {note.summary && !isSummarizing && !aiError && (
+                  <button
+                    type="button"
+                    onClick={handleSummarize}
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-[#E7E7E2] bg-white px-3 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-[#171717]"
+                  >
+                    <RefreshCw size={13} />
+                    Regenerate
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="px-5 py-5">
+              {isSummarizing ? (
+                <div
+                  className="flex items-center gap-3 py-3"
+                  aria-live="polite"
                 >
-                  {isSummarizing ? (
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
                     <Loader2
-                      size={14}
+                      size={17}
                       className="animate-spin"
                     />
-                  ) : (
+                  </span>
+
+                  <div>
+                    <p className="text-sm font-medium text-[#171717]">
+                      Generating your summary...
+                    </p>
+
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      MemDev is turning this note into a concise overview.
+                    </p>
+                  </div>
+                </div>
+              ) : aiError ? (
+                <div
+                  className="rounded-xl border border-red-100 bg-red-50/60 px-4 py-4"
+                  role="alert"
+                >
+                  <p className="text-sm font-medium text-red-700">
+                    Summary unavailable
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-red-600/80">
+                    {aiError}
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleSummarize}
+                    disabled={isSummarizing}
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#171717] px-3 py-2 text-xs font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <RefreshCw size={13} />
+                    Try again
+                  </button>
+                </div>
+              ) : note.summary ? (
+                <p className="text-[15px] leading-7 text-slate-600">
+                  {note.summary}
+                </p>
+              ) : (
+                <div className="flex flex-col items-start gap-4 py-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-[#171717]">
+                      No summary yet
+                    </p>
+
+                    <p className="mt-1 max-w-lg text-xs leading-5 text-slate-500">
+                      Generate a concise AI summary to quickly understand
+                      this note without rereading the full content.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSummarize}
+                    disabled={isSummarizing}
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[#171717] px-3.5 py-2.5 text-xs font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
                     <Sparkles size={14} />
-                  )}
-
-                  {isSummarizing
-                    ? "Generating..."
-                    : "Generate summary"}
-                </button>
-              </div>
-            </section>
-          )}
-
-          {note.summary && (
-            <div className="mb-8 flex justify-end">
-              <button
-                type="button"
-                onClick={handleSummarize}
-                disabled={isSummarizing}
-                className="inline-flex items-center gap-2 text-xs font-medium text-slate-500 transition hover:text-[#171717] disabled:opacity-50"
-              >
-                {isSummarizing ? (
-                  <Loader2
-                    size={14}
-                    className="animate-spin"
-                  />
-                ) : (
-                  <Sparkles size={14} />
-                )}
-
-                Regenerate summary
-              </button>
+                    Generate summary
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+          </section>
 
           <section>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Note
+              </h2>
+
+              <span className="text-xs text-slate-400">
+                {note.content.trim().length} characters
+              </span>
+            </div>
+
             <div className="whitespace-pre-wrap text-[15px] leading-8 text-slate-700">
               {note.content}
             </div>
@@ -552,7 +663,7 @@ function NoteDetails() {
                   type="button"
                   onClick={() =>
                     navigate(`/notes?edit=${note.id}`)
-                    }
+                  }
                   className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-[#171717]"
                 >
                   <Edit3 size={16} />
@@ -608,7 +719,7 @@ function NoteDetails() {
                     {note.noteTags.map((noteTag) => (
                       <span
                         key={noteTag.tagId}
-                        className="inline-flex items-center gap-1 rounded-full bg-slate-100 pl-2.5 pr-1 py-1 text-xs text-slate-600"
+                        className="inline-flex items-center gap-1 rounded-full bg-slate-100 py-1 pl-2.5 pr-1 text-xs text-slate-600"
                       >
                         <Hash size={11} />
                         {noteTag.tag.name}
@@ -616,19 +727,15 @@ function NoteDetails() {
                         <button
                           type="button"
                           onClick={() =>
-                            handleRemoveTag(
-                              noteTag.tagId,
-                            )
+                            handleRemoveTag(noteTag.tagId)
                           }
                           disabled={
-                            removingTagId ===
-                            noteTag.tagId
+                            removingTagId === noteTag.tagId
                           }
                           aria-label={`Remove ${noteTag.tag.name} tag`}
                           className="ml-0.5 rounded-full p-0.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700 disabled:opacity-50"
                         >
-                          {removingTagId ===
-                          noteTag.tagId ? (
+                          {removingTagId === noteTag.tagId ? (
                             <Loader2
                               size={11}
                               className="animate-spin"
@@ -680,8 +787,7 @@ function NoteDetails() {
                               {tag.name}
                             </span>
 
-                            {tag._count?.noteTags !==
-                              undefined && (
+                            {tag._count?.noteTags !== undefined && (
                               <span className="ml-auto text-xs text-slate-400">
                                 {tag._count.noteTags}
                               </span>

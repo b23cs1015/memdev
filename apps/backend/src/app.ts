@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+
 import { env } from "./config/env.js";
 import { errorHandler } from "./middleware/error.middleware.js";
 import { notFoundHandler } from "./middleware/not-found.middleware.js";
@@ -9,7 +10,30 @@ const app = express();
 
 app.use(
   cors({
-    origin: env.FRONTEND_URL,
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (origin === env.FRONTEND_URL) {
+        callback(null, true);
+        return;
+      }
+
+      if (
+        origin.startsWith(
+          "chrome-extension://",
+        )
+      ) {
+        callback(null, true);
+        return;
+      }
+
+      callback(
+        new Error("Origin not allowed by CORS"),
+      );
+    },
   }),
 );
 

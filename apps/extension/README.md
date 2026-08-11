@@ -2,39 +2,41 @@
 
 The MemDev browser extension is the quick-capture frontend of the MemDev knowledge-management application.
 
-## Phase 25
+## Phase 26
 
-Phase 25 adds selected-text capture from the active browser tab.
+Phase 26 connects the browser extension to the existing MemDev account and note API.
 
 ### Included
 
-- React + TypeScript popup
-- Chrome Manifest V3
-- Background service worker
-- Content script foundation
-- Typed internal extension messaging
 - Selected-text capture
 - Page title capture
 - Page URL capture
-- Capture preview
-- `activeTab` + `scripting` permissions
-- Runtime page access without `<all_urls>`
+- Existing MemDev session connection
+- JWT storage using Chrome extension storage
+- Authenticated note creation
+- Save loading state
+- Save success state
+- Authentication failure handling
+- Backend CORS support for the extension
+- No duplicate authentication system
 
-### Capture workflow
+## Authentication flow
+
+The extension does not ask the user for their MemDev password.
+
+Instead:
 
 ```text
-User highlights text
+User signs in to MemDev web app
         ↓
-Opens MemDev extension
+Web app stores memdev_token
         ↓
-Popup requests active tab
+User opens extension on MemDev
         ↓
-chrome.scripting.executeScript()
+Connect to MemDev
         ↓
-window.getSelection()
-        +
-document.title
-        +
-window.location.href
+Extension reads the existing token
         ↓
-Capture preview
+Token stored in chrome.storage.local
+        ↓
+Authenticated API requests

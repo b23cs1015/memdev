@@ -3,9 +3,19 @@ import {
   Check,
   Clipboard,
   ExternalLink,
+  Link2,
+  LogOut,
   RefreshCw,
+  Save,
   ShieldCheck,
 } from "lucide-react";
+
+import {
+  createNote,
+  ExtensionApiError,
+  getCurrentUser,
+  type ExtensionUser,
+} from "../lib/api";
 
 import type { CapturedContent } from "../types/messages";
 
@@ -16,6 +26,54 @@ type CaptureState =
   | "captured"
   | "empty"
   | "error";
+
+type SaveState =
+  | "idle"
+  | "saving"
+  | "saved"
+  | "error";
+
+const TOKEN_KEY = "memdev_token";
+
+async function getStoredToken() {
+  const result =
+    await chrome.storage.local.get(
+      TOKEN_KEY,
+    );
+
+  const token = result[TOKEN_KEY];
+
+  return typeof token === "string"
+    ? token
+    : null;
+}
+
+async function removeStoredToken() {
+  await chrome.storage.local.remove(
+    TOKEN_KEY,
+  );
+}
+
+async function readMemDevToken(
+  tabId: number,
+) {
+  const results =
+    await chrome.scripting.executeScript({
+      target: {
+        tabId,
+      },
+
+      world: "MAIN",
+
+      func: () => {
+        return window.localStorage.getItem(
+          "memdev_token",
+        );
+      },
+    });
+
+  return results[0]?.result ?? null;
+}
 
 function App() {
   const [status, setStatus] = useState(
@@ -31,16 +89,34 @@ function App() {
   const [errorMessage, setErrorMessage] =
     useState("");
 
+  const [user, setUser] =
+    useState<ExtensionUser | null>(null);
+
+  const [authLoading, setAuthLoading] =
+    useState(true);
+
+  const [authMessage, setAuthMessage] =
+    useState("");
+
+  const [saveState, setSaveState] =
+    useState<SaveState>("idle");
+
+  const [saveMessage, setSaveMessage] =
+    useState("");
+
   async function captureSelection() {
     setCaptureState("capturing");
     setCapturedContent(null);
     setErrorMessage("");
+    setSaveState("idle");
+    setSaveMessage("");
 
     try {
-      const [activeTab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
+      const [activeTab] =
+        await chrome.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
 
       if (!activeTab?.id) {
         throw new Error(
@@ -59,11 +135,14 @@ function App() {
               window.getSelection();
 
             const text =
-              selection?.toString().trim() ?? "";
+              selection
+                ?.toString()
+                .trim() ?? "";
 
             return {
               text,
-              title: document.title.trim(),
+              title:
+                document.title.trim(),
               url: window.location.href,
             };
           },
@@ -105,6 +184,213 @@ function App() {
     }
   }
 
+  async function loadAuthentication() {
+    setAuthLoading(true);
+    setAuthMessage("");
+
+    try {
+      const token =
+        await getStoredToken();
+
+      if (!token) {
+        setUser(null);
+        return;
+      }
+
+      const response =
+        await getCurrentUser(token);
+
+      setUser(response.user);
+    } catch (error) {
+      if (
+        error instanceof ExtensionApiError &&
+        error.status === 401
+      ) {
+        await removeStoredToken();
+
+        setUser(null);
+
+        setAuthMessage(
+          "Your MemDev session has expired. Reconnect to continue.",
+        );
+
+        return;
+      }
+
+      setAuthMessage(
+        "Unable to verify your MemDev session.",
+      );
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function connectToMemDev() {
+    setAuthMessage("");
+
+    try {
+      const [activeTab] =
+        await chrome.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
+
+      if (!activeTab?.id) {
+        setAuthMessage(
+          "Unable to determine the active tab.",
+        );
+
+        return;
+      }
+
+      const activeUrl =
+        activeTab.url ?? "";
+
+      if (
+        !activeUrl.startsWith(
+          "http://localhost:5173/",
+        )
+      ) {
+        await chrome.tabs.create({
+          url: "http://localhost:5173/login",
+        });
+
+        setAuthMessage(
+            "MemDev login opened. Sign in, then open the extension again and connect.",
+        );
+
+        return;
+      }
+
+      const token =
+        await readMemDevToken(
+          activeTab.id,
+        );
+
+      if (!token) {
+        setAuthMessage(
+          "Sign in to MemDev in this tab first, then connect again.",
+        );
+
+        return;
+      }
+
+      await chrome.storage.local.set({
+        [TOKEN_KEY]: token,
+      });
+
+      const response =
+        await getCurrentUser(token);
+
+      setUser(response.user);
+
+      setAuthMessage(
+        "Connected to your MemDev account.",
+      );
+    } catch (error) {
+      console.error(
+        "[MemDev] Connection failed:",
+        error,
+      );
+
+      setAuthMessage(
+        "Unable to connect to MemDev. Make sure the web app is running and you are signed in.",
+      );
+    }
+  }
+
+  async function disconnectFromMemDev() {
+    await removeStoredToken();
+
+    setUser(null);
+    setSaveState("idle");
+    setSaveMessage("");
+    setAuthMessage(
+      "MemDev connection removed.",
+    );
+  }
+
+  async function saveToMemDev() {
+    if (!capturedContent) {
+      return;
+    }
+
+    if (!user) {
+      setSaveState("error");
+      setSaveMessage(
+        "Connect to MemDev before saving.",
+      );
+
+      return;
+    }
+
+    setSaveState("saving");
+    setSaveMessage("");
+
+    try {
+      const token =
+        await getStoredToken();
+
+      if (!token) {
+        setUser(null);
+        setSaveState("error");
+        setSaveMessage(
+          "Your MemDev session is no longer available.",
+        );
+
+        return;
+      }
+
+      const title =
+        capturedContent.title ||
+        `Capture from ${new URL(
+          capturedContent.url,
+        ).hostname}`;
+
+      await createNote(token, {
+        title,
+        content:
+          capturedContent.text,
+        sourceUrl:
+          capturedContent.url,
+      });
+
+      setSaveState("saved");
+
+      setSaveMessage(
+        "Saved successfully to your MemDev library.",
+      );
+    } catch (error) {
+      console.error(
+        "[MemDev] Save failed:",
+        error,
+      );
+
+      if (
+        error instanceof ExtensionApiError &&
+        error.status === 401
+      ) {
+        await removeStoredToken();
+
+        setUser(null);
+        setSaveState("error");
+        setSaveMessage(
+          "Your MemDev session has expired. Reconnect to continue.",
+        );
+
+        return;
+      }
+
+      setSaveState("error");
+
+      setSaveMessage(
+        error instanceof ExtensionApiError
+          ? error.message
+          : "Unable to save the note.",
+      );
+    }
+  }
+
   useEffect(() => {
     chrome.runtime.sendMessage(
       {
@@ -133,6 +419,7 @@ function App() {
       },
     );
 
+    void loadAuthentication();
     void captureSelection();
   }, []);
 
@@ -143,6 +430,12 @@ function App() {
 
     void chrome.tabs.create({
       url: capturedContent.url,
+    });
+  }
+
+  function openMemDev() {
+    void chrome.tabs.create({
+      url: "http://localhost:5173/dashboard",
     });
   }
 
@@ -177,9 +470,8 @@ function App() {
         </h1>
 
         <p className="description">
-          Select something useful on a webpage
-          and MemDev will capture it with its
-          source.
+          Capture useful text and save it
+          directly to your MemDev library.
         </p>
       </section>
 
@@ -219,7 +511,7 @@ function App() {
                   </strong>
 
                   <span>
-                    Ready for the next step.
+                    Ready to save.
                   </span>
                 </div>
               </div>
@@ -238,7 +530,9 @@ function App() {
                 className="source-button"
                 type="button"
                 onClick={openSource}
-                title={capturedContent.url}
+                title={
+                  capturedContent.url
+                }
               >
                 <span>
                   {capturedContent.title ||
@@ -250,9 +544,9 @@ function App() {
             </div>
 
             <p className="capture-hint">
-              To capture something else, select
-              different text on the webpage and
-              reopen MemDev.
+              To capture something else,
+              select different text on the
+              webpage and reopen MemDev.
             </p>
           </section>
         )}
@@ -268,8 +562,8 @@ function App() {
           </strong>
 
           <span>
-            Highlight some text on the webpage,
-            then open MemDev again.
+            Highlight some text on the
+            webpage, then open MemDev again.
           </span>
         </section>
       )}
@@ -286,6 +580,146 @@ function App() {
           </span>
         </section>
       )}
+
+      <section
+        className="connection-panel"
+        aria-label="MemDev connection"
+      >
+        <div className="connection-header">
+          <div className="connection-title">
+            <span
+              className={
+                user
+                  ? "status-icon"
+                  : "status-icon muted"
+              }
+            >
+              {user ? (
+                <Check
+                  size={15}
+                  strokeWidth={2}
+                />
+              ) : (
+                <Link2
+                  size={15}
+                  strokeWidth={2}
+                />
+              )}
+            </span>
+
+            <div>
+              <strong>
+                MemDev account
+              </strong>
+
+              <span>
+                {authLoading
+                  ? "Checking connection..."
+                  : user
+                    ? user.email
+                    : "Not connected"}
+              </span>
+            </div>
+          </div>
+
+          {user && (
+            <button
+              className="icon-button"
+              type="button"
+              onClick={() => {
+                void disconnectFromMemDev();
+              }}
+              title="Disconnect MemDev"
+              aria-label="Disconnect MemDev"
+            >
+              <LogOut size={14} />
+            </button>
+          )}
+        </div>
+
+        {authMessage && (
+          <p className="connection-message">
+            {authMessage}
+          </p>
+        )}
+
+        {!authLoading && !user && (
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => {
+              void connectToMemDev();
+            }}
+          >
+            <Link2 size={15} />
+            Connect to MemDev
+          </button>
+        )}
+      </section>
+
+      {saveMessage && (
+        <div
+          className={
+            saveState === "saved"
+              ? "save-message success"
+              : "save-message error-message"
+          }
+        >
+          {saveState === "saved" ? (
+            <Check size={14} />
+          ) : null}
+
+          <span>{saveMessage}</span>
+        </div>
+      )}
+
+      {captureState === "captured" &&
+        capturedContent &&
+        user &&
+        saveState !== "saved" && (
+          <button
+            className="primary-button"
+            type="button"
+            disabled={saveState === "saving"}
+            onClick={() => {
+              void saveToMemDev();
+            }}
+          >
+            {saveState === "saving" ? (
+              <>
+                <RefreshCw
+                  className="spin"
+                  size={15}
+                />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save size={15} />
+                Save to MemDev
+              </>
+            )}
+          </button>
+        )}
+
+      {saveState === "saved" && (
+        <button
+          className="primary-button"
+          type="button"
+          onClick={openMemDev}
+        >
+          Open MemDev
+          <ExternalLink size={15} />
+        </button>
+      )}
+
+      {!user &&
+        captureState === "captured" && (
+          <p className="save-hint">
+            Connect your MemDev account to
+            save this capture.
+          </p>
+        )}
 
       <section
         className="status-panel"
@@ -318,19 +752,19 @@ function App() {
 
           <div>
             <strong>
-              Capture access
+              Account security
             </strong>
 
             <span>
-              Access is requested only when
-              you use the extension.
+              Your existing MemDev session is
+              used to authorize saves.
             </span>
           </div>
         </div>
       </section>
 
       <footer>
-        Phase 25 · Selected Text Capture
+        Phase 26 · Save to MemDev
       </footer>
     </main>
   );

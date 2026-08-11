@@ -21,12 +21,12 @@ button {
 
 .popup {
   width: 380px;
-  min-height: 520px;
+  min-height: 560px;
   padding: 22px;
 
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 .brand {
@@ -175,6 +175,11 @@ h1 {
   color: #3f7d5a;
 }
 
+.status-icon.muted {
+  background: #f1f1ee;
+  color: #969692;
+}
+
 .selection-preview {
   max-height: 170px;
 
@@ -245,6 +250,16 @@ h1 {
   white-space: nowrap;
 }
 
+.capture-hint,
+.save-hint {
+  margin: 0;
+
+  color: #969692;
+
+  font-size: 10px;
+  line-height: 1.5;
+}
+
 .empty {
   align-items: center;
 
@@ -299,6 +314,171 @@ h1 {
   line-height: 1.5;
 }
 
+.connection-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  padding: 12px;
+
+  border: 1px solid #e7e7e2;
+  border-radius: 10px;
+
+  background: #ffffff;
+}
+
+.connection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.connection-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.connection-title strong,
+.connection-title span {
+  display: block;
+}
+
+.connection-title strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.connection-title div > span {
+  margin-top: 2px;
+
+  max-width: 245px;
+
+  overflow: hidden;
+
+  color: #6b6b68;
+
+  font-size: 10px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icon-button {
+  width: 28px;
+  height: 28px;
+
+  display: grid;
+  place-items: center;
+
+  border: 1px solid #e7e7e2;
+  border-radius: 7px;
+
+  background: #ffffff;
+  color: #6b6b68;
+
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: #f5f5f2;
+  color: #171717;
+}
+
+.connection-message {
+  margin: 0;
+
+  color: #6b6b68;
+
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.secondary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  width: 100%;
+
+  padding: 9px 12px;
+
+  border: 1px solid #dcdcd6;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #171717;
+
+  cursor: pointer;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.secondary-button:hover {
+  background: #f5f5f2;
+}
+
+.save-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+
+  padding: 9px 10px;
+
+  border-radius: 8px;
+
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.save-message.success {
+  border: 1px solid #d9e7dc;
+
+  background: #f3f8f4;
+  color: #3f7d5a;
+}
+
+.save-message.error-message {
+  border: 1px solid #ead4d4;
+
+  background: #fffafa;
+  color: #9d3535;
+}
+
+.primary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  width: 100%;
+
+  padding: 10px 14px;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: #171b22;
+  color: #ffffff;
+
+  cursor: pointer;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.primary-button:hover {
+  background: #292d35;
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .status-panel {
   display: grid;
   gap: 1px;
@@ -340,32 +520,6 @@ h1 {
   line-height: 1.45;
 }
 
-.primary-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-
-  width: 100%;
-
-  padding: 10px 14px;
-
-  border: 0;
-  border-radius: 8px;
-
-  background: #171b22;
-  color: #ffffff;
-
-  cursor: pointer;
-
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.primary-button:hover {
-  background: #292d35;
-}
-
 footer {
   margin-top: auto;
 
@@ -383,13 +537,4 @@ footer {
   to {
     transform: rotate(360deg);
   }
-}
-
-.capture-hint {
-  margin: 0;
-
-  color: #969692;
-
-  font-size: 10px;
-  line-height: 1.5;
 }

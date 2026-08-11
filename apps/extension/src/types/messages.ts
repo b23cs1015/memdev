@@ -1,3 +1,9 @@
+export type CapturedContent = {
+  text: string;
+  title: string;
+  url: string;
+};
+
 export type ExtensionMessage =
   | {
       type: "GET_EXTENSION_STATUS";
@@ -8,6 +14,9 @@ export type ExtensionMessage =
   | {
       type: "CONTENT_SCRIPT_READY";
       url: string;
+    }
+  | {
+      type: "CAPTURE_SELECTION";
     };
 
 export type ExtensionResponse =
@@ -24,6 +33,11 @@ export type ExtensionResponse =
   | {
       ok: true;
       type: "CONTENT_SCRIPT_PONG";
+    }
+  | {
+      ok: true;
+      type: "CAPTURED_CONTENT";
+      content: CapturedContent;
     }
   | {
       ok: false;

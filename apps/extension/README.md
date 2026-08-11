@@ -2,33 +2,39 @@
 
 The MemDev browser extension is the quick-capture frontend of the MemDev knowledge-management application.
 
-## Phase 24
+## Phase 25
 
-Phase 24 establishes the Chrome Manifest V3 foundation.
+Phase 25 adds selected-text capture from the active browser tab.
 
 ### Included
 
 - React + TypeScript popup
 - Chrome Manifest V3
 - Background service worker
-- Content script
+- Content script foundation
 - Typed internal extension messaging
-- Minimal extension permissions
-- Local MemDev development-page integration
+- Selected-text capture
+- Page title capture
+- Page URL capture
+- Capture preview
+- `activeTab` + `scripting` permissions
+- Runtime page access without `<all_urls>`
 
-### Architecture
+### Capture workflow
 
 ```text
-Chrome
-  │
-  ├── Popup
-  │     │
-  │     └── chrome.runtime messaging
-  │
-  ├── Background Service Worker
-  │     │
-  │     └── Extension coordination
-  │
-  └── Content Script
-        │
-        └── Webpage integration
+User highlights text
+        ↓
+Opens MemDev extension
+        ↓
+Popup requests active tab
+        ↓
+chrome.scripting.executeScript()
+        ↓
+window.getSelection()
+        +
+document.title
+        +
+window.location.href
+        ↓
+Capture preview

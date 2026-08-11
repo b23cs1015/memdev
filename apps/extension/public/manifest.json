@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "MemDev",
+  "version": "0.1.0",
+  "description": "Capture and organize useful knowledge with MemDev.",
+
+  "action": {
+    "default_title": "MemDev",
+    "default_popup": "popup.html"
+  },
+
+  "background": {
+    "service_worker": "assets/background/service-worker.js",
+    "type": "module"
+  },
+
+  "permissions": [
+    "activeTab"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost:5173/*"
+      ],
+      "js": [
+        "assets/content/content-script.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
